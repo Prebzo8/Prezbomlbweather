@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<DOCUMENT filename="index.html"><!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -451,6 +451,12 @@ function pColRow(p){return p<20?'col-green':p<40?'col-yellow':'col-red';}
 
 const cardinal=d=>['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
 
+// ── EST OFFSET HELPER (added per request: hour difference from EST) ───────────
+function getEstOffset(tz){
+  const map = {'ET':0,'CT':-1,'MT':-2,'PT':-3,'MST':-2};
+  return map[tz] !== undefined ? map[tz] : 0;
+}
+
 // ── LAZY FETCH PATCH (only load weather when team is opened) ─────────────────
 function nowEST(){
   return new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
@@ -550,6 +556,16 @@ function buildExpandPanel(abbr){
   const gt=gameTimes[abbr]||'';
   const parsed=parseGameTime(gt);
   const hasTime=parsed!=null;
+
+  // ── NEW: EST hour difference (added per user request) ─────────────────────
+  const teamInfo = TEAMS.find(t=>t.abbr===abbr);
+  const tz = teamInfo?.tz || 'local';
+  const offset = getEstOffset(tz);
+  let offsetText = '';
+  if (offset === 0) offsetText = 'same as EST';
+  else if (offset < 0) offsetText = `${Math.abs(offset)} hour${Math.abs(offset) > 1 ? 's' : ''} behind EST`;
+  else offsetText = `${offset} hour${offset > 1 ? 's' : ''} ahead of EST`;
+
   const windows=hasTime?`<div class="windows-grid">
   ${buildWindowCard(abbr,-60,'1H Before',false)}
   ${buildWindowCard(abbr,0,'First Pitch',true)}
@@ -566,7 +582,7 @@ function buildExpandPanel(abbr){
   oninput="liveUpdate('${abbr}')"/>
   ${gt?`<button class="clear-btn" onclick="clearTime('${abbr}')">Clear</button>`:''}
   <span class="time-hint">e.g. 7:05 PM · 1:10 PM · 13:10</span>
-  <span class="tz-note">⚠️ Enter time in the <strong>home team's local timezone</strong> — ${TEAMS.find(t=>t.abbr===abbr)?.tz||'local'}</span>
+  <span class="tz-note">⚠️ Enter time in the <strong>home team's local timezone</strong> — ${tz} (${offsetText})</span>
   </div>
   <div id="windows-${abbr}">${windows}</div>
   ${cheatSection}
@@ -735,4 +751,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-</html>
+</html></DOCUMENT>
