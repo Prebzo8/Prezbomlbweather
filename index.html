@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB WEATHER HQ • 2026</title>
+<title>MLB WEATHER HQ</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -45,37 +45,11 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-
 .ticker-inner span{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;color:#000;text-transform:uppercase;padding:0 28px;}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-/* ── TABS (NOW STRETCHED & BIGGER) ── */
-.tab-bar{
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  padding:0;
-  display:flex;
-  gap:0;
-}
-.tab-btn{
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:800;
-  font-size:19px;                 /* BIGGER TEXT */
-  letter-spacing:3px;
-  text-transform:uppercase;
-  color:var(--muted);
-  padding:22px 0;                 /* MORE VERTICAL SPACE */
-  border:none;
-  background:transparent;
-  cursor:pointer;
-  border-bottom:4px solid transparent;
-  transition:all .15s;
-  margin-bottom:-1px;
-  flex:1;                         /* STRETCH FULL WIDTH */
-  text-align:center;
-  max-width:none;
-}
+/* ── TABS ── */
+.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;gap:0;}
+.tab-btn{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:14px 22px;border:none;background:transparent;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;margin-bottom:-1px;}
 .tab-btn:hover{color:var(--text);}
-.tab-btn.active{
-  color:var(--accent);
-  border-bottom-color:var(--accent);
-}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
 
 /* ── CONTROLS ── */
 .controls-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
@@ -151,24 +125,9 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .wc-wind-bar{background:var(--dim);border-radius:2px;height:4px;margin-top:10px;}
 .wc-wind-fill{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--accent));}
 
-/* NEW: 2026 NOTES SECTION (added to every window card) */
-.wc-notes{
-  margin-top:18px;
-  padding-top:12px;
-  border-top:1px solid var(--border2);
-  font-size:12.5px;
-  line-height:1.45;
-  color:var(--muted);
-}
-.wc-notes-label{
-  font-family:'Barlow Condensed',sans-serif;
-  font-weight:800;
-  font-size:11px;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--accent);
-  margin-bottom:6px;
-}
+/* 2026 NOTES / QUICK RULES – added at the bottom of EVERY diagram */
+.wc-notes{margin-top:18px;padding-top:12px;border-top:1px solid var(--border2);font-size:12.5px;line-height:1.45;color:var(--muted);}
+.wc-notes-label{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
 
 .wc-no-data{font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:1px;color:var(--dim);text-align:center;padding:24px 0;}
 .no-time-prompt{text-align:center;padding:32px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px;color:var(--dim);}
@@ -278,11 +237,11 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
   </div>
 </div>
 
-<!-- TABS (now stretched & bigger) -->
+<!-- TABS -->
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-weather" onclick="switchTab('weather')">⛅ WEATHER DASHBOARD</button>
-  <button class="tab-btn" id="tab-cheat" onclick="switchTab('cheat')">🏟️ STADIUM CHEAT SHEET</button>
-  <button class="tab-btn" id="tab-legend" onclick="switchTab('legend')">🎨 COLOR LEGEND</button>
+  <button class="tab-btn active" id="tab-weather" onclick="switchTab('weather')">⛅ Weather Dashboard</button>
+  <button class="tab-btn" id="tab-cheat" onclick="switchTab('cheat')">🏟️ Stadium Cheat Sheet</button>
+  <button class="tab-btn" id="tab-legend" onclick="switchTab('legend')">🎨 Color Legend</button>
 </div>
 
 <!-- WEATHER VIEW -->
@@ -358,16 +317,40 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
         <div class="legend-card-title">💧 Humidity (%)</div>
         <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">Very Dry</span></div><span class="legend-range">&lt; 50%</span></div>
         <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-yellow"></div><span class="col-yellow">Moderate</span></div><span class="legend-range">50–60%</span></div>
-        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-dull"></div><span class="col-dull">Good</span></div><span class="legend-range">61–70%</span></div>
-        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Ideal</span></div><span class="legend-range">71%+</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-dull"></div><span class="col-dull">Good</span></div><span class="legend-range">60–70%</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Ideal</span></div><span class="legend-range">&gt; 70%</span></div>
       </div>
 
       <div class="legend-card">
-        <div class="legend-card-title">🌬️ Wind Speed (mph)</div>
-        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">Calm</span></div><span class="legend-range">0–5.9 mph</span></div>
+        <div class="legend-card-title">🔵 Pressure (hPa)</div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">High Pressure</span></div><span class="legend-range">&gt; 1020 hPa</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-yellow"></div><span class="col-yellow">Slightly High</span></div><span class="legend-range">1015–1020 hPa</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-dull"></div><span class="col-dull">Normal</span></div><span class="legend-range">1010–1015 hPa</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Low Pressure</span></div><span class="legend-range">&lt; 1010 hPa</span></div>
+      </div>
+
+      <div class="legend-card">
+        <div class="legend-card-title">💨 Wind Speed (mph)</div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">Calm / No Carry</span></div><span class="legend-range">≤ 5.9 mph</span></div>
         <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-yellow"></div><span class="col-yellow">Light</span></div><span class="legend-range">6–12.9 mph</span></div>
-        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-dull"></div><span class="col-dull">Breezy</span></div><span class="legend-range">13–19.9 mph</span></div>
-        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Strong</span></div><span class="legend-range">20+ mph</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-dull"></div><span class="col-dull">Moderate</span></div><span class="legend-range">13–19.9 mph</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Strong Carry</span></div><span class="legend-range">≥ 20 mph</span></div>
+      </div>
+
+      <div class="legend-card">
+        <div class="legend-card-title">💨 Wind Gusts (mph)</div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">Minimal Gusts</span></div><span class="legend-range">≤ 10.9 mph</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-yellow"></div><span class="col-yellow">Light Gusts</span></div><span class="legend-range">11–18.9 mph</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-dull"></div><span class="col-dull">Moderate Gusts</span></div><span class="legend-range">19–25 mph</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Strong Gusts</span></div><span class="legend-range">≥ 25.1 mph</span></div>
+      </div>
+
+      <div class="legend-card">
+        <div class="legend-card-title">🌧️ Rain Probability (%)</div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-green"></div><span class="col-green">Clear</span></div><span class="legend-range">&lt; 20%</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-yellow"></div><span class="col-yellow">Possible</span></div><span class="legend-range">20–39%</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">Likely</span></div><span class="legend-range">40–69%</span></div>
+        <div class="legend-row"><div class="legend-left"><div class="legend-swatch swatch-red"></div><span class="col-red">Rain Game</span></div><span class="legend-range">≥ 70%</span></div>
       </div>
 
     </div>
@@ -375,42 +358,42 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 </div>
 
 <script>
-// ── TEAMS DATA ───────────────────────────────────────────────────────────────
+// ── TEAM DATA ────────────────────────────────────────────────────────────────
 const TEAMS=[
-  {abbr:'ARI',stadium:'Chase Field',             lat:33.4454,lon:-112.0667,color:'#A71930',division:'NL West'},
-  {abbr:'ATL',stadium:'Truist Park',             lat:33.8908,lon:-84.4682,color:'#CE1141',division:'NL East'},
-  {abbr:'BAL',stadium:'Oriole Park at Camden Yards',lat:39.2852,lon:-76.6201,color:'#DF4601',division:'AL East'},
-  {abbr:'BOS',stadium:'Fenway Park',             lat:42.3466,lon:-71.0988,color:'#BD3039',division:'AL East'},
-  {abbr:'CHC',stadium:'Wrigley Field',           lat:41.9484,lon:-87.6553,color:'#0E4D92',division:'NL Central'},
-  {abbr:'CHW',stadium:'Guaranteed Rate Field',   lat:41.8309,lon:-87.6351,color:'#27251F',division:'AL Central'},
-  {abbr:'CIN',stadium:'Great American Ball Park',lat:39.1072,lon:-84.5077,color:'#C6011F',division:'NL Central'},
-  {abbr:'CLE',stadium:'Progressive Field',       lat:41.4951,lon:-81.6871,color:'#E50022',division:'AL Central'},
-  {abbr:'COL',stadium:'Coors Field',             lat:39.756,lon:-104.9942,color:'#33006F',division:'NL West'},
-  {abbr:'DET',stadium:'Comerica Park',           lat:42.3392,lon:-83.0488,color:'#0C2C56',division:'AL Central'},
-  {abbr:'HOU',stadium:'Daikin Park',             lat:29.7573,lon:-95.3556,color:'#EB6E1F',division:'AL West'},
-  {abbr:'KCR',stadium:'Kauffman Stadium',        lat:39.1022,lon:-94.5836,color:'#004687',division:'AL Central'},
-  {abbr:'LAA',stadium:'Angel Stadium',           lat:33.8003,lon:-117.8827,color:'#BA0021',division:'AL West'},
-  {abbr:'LAD',stadium:'Dodger Stadium',          lat:34.0736,lon:-118.2399,color:'#005A9C',division:'NL West'},
-  {abbr:'MIA',stadium:'loanDepot park',          lat:25.7781,lon:-80.2196,color:'#00A3E0',division:'NL East'},
-  {abbr:'MIL',stadium:'American Family Field',   lat:43.0281,lon:-87.9706,color:'#12284B',division:'NL Central'},
-  {abbr:'MIN',stadium:'Target Field',            lat:44.9817,lon:-93.2785,color:'#002B5C',division:'AL Central'},
-  {abbr:'NYM',stadium:'Citi Field',              lat:40.7571,lon:-73.8458,color:'#002D72',division:'NL East'},
-  {abbr:'NYY',stadium:'Yankee Stadium',          lat:40.8296,lon:-73.9262,color:'#1D2D5B',division:'AL East'},
-  {abbr:'ATH',stadium:'Sutter Health Park',      lat:38.5804,lon:-121.5138,color:'#006400',division:'AL West'},
-  {abbr:'PHI',stadium:'Citizens Bank Park',      lat:39.9061,lon:-75.1665,color:'#E81828',division:'NL East'},
-  {abbr:'PIT',stadium:'PNC Park',                lat:40.4615,lon:-80.0089,color:'#FDB827',division:'NL Central'},
-  {abbr:'SDP',stadium:'Petco Park',              lat:32.7521,lon:-117.1436,color:'#2F241D',division:'NL West'},
-  {abbr:'SEA',stadium:'T-Mobile Park',           lat:47.5915,lon:-122.3329,color:'#0C2C56',division:'AL West'},
-  {abbr:'SFG',stadium:'Oracle Park',             lat:37.7799,lon:-122.3893,color:'#FD5A1E',division:'NL West'},
-  {abbr:'STL',stadium:'Busch Stadium',           lat:38.6226,lon:-90.1928,color:'#C41E3A',division:'NL Central'},
-  {abbr:'TBR',stadium:'Tropicana Field',         lat:27.7685,lon:-82.6482,color:'#092C5C',division:'AL East'},
-  {abbr:'TEX',stadium:'Globe Life Field',        lat:32.7475,lon:-97.0842,color:'#003278',division:'AL West'},
-  {abbr:'TOR',stadium:'Rogers Centre',           lat:43.6417,lon:-79.3892,color:'#134A8E',division:'AL East'},
-  {abbr:'WSN',stadium:'Nationals Park',          lat:38.8728,lon:-77.0075,color:'#AB0003',division:'NL East'},
+  {abbr:'ARI',stadium:'Chase Field',                lat:33.4454,lon:-112.0667,color:'#A71930',division:'NL West'},
+  {abbr:'ATL',stadium:'Truist Park',                lat:33.8908,lon:-84.4682, color:'#CE1141',division:'NL East'},
+  {abbr:'BAL',stadium:'Oriole Park at Camden Yards',lat:39.2852,lon:-76.6201, color:'#DF4601',division:'AL East'},
+  {abbr:'BOS',stadium:'Fenway Park',                lat:42.3466,lon:-71.0988, color:'#BD3039',division:'AL East'},
+  {abbr:'CHC',stadium:'Wrigley Field',              lat:41.9484,lon:-87.6553, color:'#0E3386',division:'NL Central'},
+  {abbr:'CHW',stadium:'Guaranteed Rate Field',      lat:41.8309,lon:-87.6351, color:'#27251F',division:'AL Central'},
+  {abbr:'CIN',stadium:'Great American Ball Park',   lat:39.1072,lon:-84.5077, color:'#C6011F',division:'NL Central'},
+  {abbr:'CLE',stadium:'Progressive Field',          lat:41.4951,lon:-81.6871, color:'#00385D',division:'AL Central'},
+  {abbr:'COL',stadium:'Coors Field',                lat:39.756, lon:-104.9942,color:'#33006F',division:'NL West'},
+  {abbr:'DET',stadium:'Comerica Park',              lat:42.3392,lon:-83.0488, color:'#0C2340',division:'AL Central'},
+  {abbr:'HOU',stadium:'Daikin Park',                lat:29.7573,lon:-95.3556, color:'#002D62',division:'AL West'},
+  {abbr:'KCR',stadium:'Kauffman Stadium',           lat:39.1022,lon:-94.5836, color:'#004687',division:'AL Central'},
+  {abbr:'LAA',stadium:'Angel Stadium',              lat:33.8003,lon:-117.8827,color:'#BA0021',division:'AL West'},
+  {abbr:'LAD',stadium:'Dodger Stadium',             lat:34.0736,lon:-118.2399,color:'#005A9C',division:'NL West'},
+  {abbr:'MIA',stadium:'loanDepot park',             lat:25.7781,lon:-80.2196, color:'#00A3E0',division:'NL East'},
+  {abbr:'MIL',stadium:'American Family Field',      lat:43.0281,lon:-87.9706, color:'#12284B',division:'NL Central'},
+  {abbr:'MIN',stadium:'Target Field',               lat:44.9817,lon:-93.2785, color:'#002B5C',division:'AL Central'},
+  {abbr:'NYM',stadium:'Citi Field',                 lat:40.7571,lon:-73.8458, color:'#002D72',division:'NL East'},
+  {abbr:'NYY',stadium:'Yankee Stadium',             lat:40.8296,lon:-73.9262, color:'#1D2D5B',division:'AL East'},
+  {abbr:'ATH',stadium:'Sutter Health Park',         lat:38.5804,lon:-121.5138,color:'#006400',division:'AL West'},
+  {abbr:'PHI',stadium:'Citizens Bank Park',         lat:39.9061,lon:-75.1665, color:'#E81828',division:'NL East'},
+  {abbr:'PIT',stadium:'PNC Park',                   lat:40.4615,lon:-80.0089, color:'#FDB827',division:'NL Central'},
+  {abbr:'SDP',stadium:'Petco Park',                 lat:32.7521,lon:-117.1436,color:'#2F241D',division:'NL West'},
+  {abbr:'SEA',stadium:'T-Mobile Park',              lat:47.5915,lon:-122.3329,color:'#0C2C56',division:'AL West'},
+  {abbr:'SFG',stadium:'Oracle Park',                lat:37.7799,lon:-122.3893,color:'#FD5A1E',division:'NL West'},
+  {abbr:'STL',stadium:'Busch Stadium',              lat:38.6226,lon:-90.1928, color:'#C41E3A',division:'NL Central'},
+  {abbr:'TBR',stadium:'Tropicana Field',            lat:27.7685,lon:-82.6482, color:'#092C5C',division:'AL East'},
+  {abbr:'TEX',stadium:'Globe Life Field',           lat:32.7475,lon:-97.0842, color:'#003278',division:'AL West'},
+  {abbr:'TOR',stadium:'Rogers Centre',              lat:43.6417,lon:-79.3892, color:'#134A8E',division:'AL East'},
+  {abbr:'WSN',stadium:'Nationals Park',             lat:38.8728,lon:-77.0075, color:'#AB0003',division:'NL East'},
 ];
 
-// ── CHEAT SHEET DATA (unchanged) ─────────────────────────────────────────────
-const CHEAT=[ /* ... all your original cheat data exactly as before ... */ 
+// ── CHEAT SHEET DATA ─────────────────────────────────────────────────────────
+const CHEAT=[
   {team:'ARI',stadium:'Chase Field',lf:330,cf:407,rf:335,lfWall:'25',rfWall:'8',hitter:'S, SW, SE',pitcher:'N, NE',notes:'Roof open = S wind = biggest HR boost'},
   {team:'ATL',stadium:'Truist Park',lf:335,cf:400,rf:325,lfWall:'25',rfWall:'25',hitter:'S, SW',pitcher:'N, NE',notes:'South wind = strongest offensive boost'},
   {team:'BAL',stadium:'Oriole Park at Camden Yards',lf:333,cf:410,rf:318,lfWall:'7',rfWall:'7',hitter:'S, SW',pitcher:'N, NE',notes:'Short RF porch; S wind boosts HR'},
@@ -431,7 +414,7 @@ const CHEAT=[ /* ... all your original cheat data exactly as before ... */
   {team:'NYM',stadium:'Citi Field',lf:335,cf:405,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Standard modern park'},
   {team:'NYY',stadium:'Yankee Stadium',lf:318,cf:408,rf:314,lfWall:'8',rfWall:'8',hitter:'S, SW (huge RF boost)',pitcher:'N, NE',notes:'Short RF porch'},
   {team:'ATH',stadium:'Sutter Health Park (temp)',lf:330,cf:403,rf:325,lfWall:'8–12',rfWall:'8–12',hitter:'S, SW',pitcher:'N, NE',notes:'2026 temp home – minor-league dimensions'},
-  {team:'PHI',stadium:'Citizens Bank Park',lf:330,cf:401,rf:329,lfWall:'8–13',rfWall:'8–13',hitter:'S, SW',pitcher:'N, NE',notes:'No field dimension changes 2026; hosting MLB All-Star Game'},
+  {team:'PHI',stadium:'Citizens Bank Park',lf:330,cf:401,rf:329,lfWall:'8–13',rfWall:'8–13',hitter:'S, SW',pitcher:'N, NE',notes:'No dimension changes 2026; hosting MLB All-Star Game'},
   {team:'PIT',stadium:'PNC Park',lf:325,cf:399,rf:320,lfWall:'21 (Clemente)',rfWall:'21',hitter:'S, SW',pitcher:'N, NE',notes:'Beautiful river park'},
   {team:'SDP',stadium:'Petco Park',lf:336,cf:396,rf:322,lfWall:'8–11',rfWall:'8–11',hitter:'S, SW (marine layer)',pitcher:'N, NE',notes:'Deep gaps'},
   {team:'SEA',stadium:'T-Mobile Park',lf:331,cf:405,rf:327,lfWall:'8',rfWall:'8',hitter:'S, SW (when roof open)',pitcher:'N, NE',notes:'Retractable roof + marine air'},
@@ -446,18 +429,54 @@ const CHEAT=[ /* ... all your original cheat data exactly as before ... */
 // ── STATE ────────────────────────────────────────────────────────────────────
 let allData={}, gameTimes={}, openTeam=null;
 
-// ── COLOR RULES (unchanged) ──────────────────────────────────────────────────
-// ... (all your original color functions stay exactly the same) ...
+// ── COLOR RULES ──────────────────────────────────────────────────────────────
+function colTemp(t){
+  if(t>=95||t<=40) return 'col-red';
+  if(t>=85) return 'col-yellow';
+  return 'col-green';
+}
+function colHumid(h){
+  if(h<50)  return 'col-red';
+  if(h<=60) return 'col-yellow';
+  if(h<=70) return 'col-dull';
+  return 'col-green';
+}
+function colPressure(p){
+  if(p>1020)  return 'col-red';
+  if(p>=1015) return 'col-yellow';
+  if(p>=1010) return 'col-dull';
+  return 'col-green';
+}
+function colWind(s){
+  if(s<=5.9)  return 'col-red';
+  if(s<=12.9) return 'col-yellow';
+  if(s<=19.9) return 'col-dull';
+  return 'col-green';
+}
+function colGusts(g){
+  if(g<=10.9) return 'col-red';
+  if(g<=18.9) return 'col-yellow';
+  if(g<=25)   return 'col-dull';
+  return 'col-green';
+}
+function colPrecip(p){
+  if(p<20)  return 'col-green';
+  if(p<40)  return 'col-yellow';
+  return 'col-red';
+}
+function tCol(t){return t>=95||t<=40?'col-red':t>=85?'col-yellow':'col-green';}
+function wColRow(s){return s<=5.9?'col-red':s<=12.9?'col-yellow':s<=19.9?'col-dull':'col-green';}
+function pColRow(p){return p<20?'col-green':p<40?'col-yellow':'col-red';}
 
 const cardinal=d=>['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
 
-// ── HELPER: GET 2026 NOTES ───────────────────────────────────────────────────
+// ── NEW: GET 2026 NOTES ─────────────────────────────────────────────────────
 function getNotes(abbr){
-  const entry=CHEAT.find(c=>c.team===abbr);
-  return entry?entry.notes:'No 2026 notes available';
+  const entry = CHEAT.find(c => c.team === abbr);
+  return entry ? entry.notes : 'No 2026 notes available';
 }
 
-// ── TAB SWITCHING (unchanged) ────────────────────────────────────────────────
+// ── TAB SWITCHING ────────────────────────────────────────────────────────────
 function switchTab(tab){
   document.getElementById('weather-view').style.display = tab==='weather'?'block':'none';
   document.getElementById('cheat-view').style.display   = tab==='cheat'?'block':'none';
@@ -468,16 +487,82 @@ function switchTab(tab){
   if(tab==='cheat') renderCheat();
 }
 
-// ── FETCH & LOAD (unchanged) ─────────────────────────────────────────────────
-async function fetchTeam(team){ /* ... original fetchTeam code ... */ }
-async function loadAll(){ /* ... original loadAll code ... */ }
+// ── FETCH ────────────────────────────────────────────────────────────────────
+async function fetchTeam(team){
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${team.lat}&longitude=${team.lon}`
+    +`&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,`
+    +`wind_direction_10m,wind_gusts_10m,apparent_temperature,precipitation_probability,precipitation`
+    +`&timezone=auto&forecast_days=1&wind_speed_unit=mph&temperature_unit=fahrenheit`;
+  try{
+    const json=await fetch(url).then(r=>r.json());
+    const h=json.hourly; const hours=[];
+    for(let i=0;i<h.time.length;i++){
+      const t=new Date(h.time[i]);
+      if(t.getHours()<6) continue;
+      hours.push({
+        time:t, temp:Math.round(h.temperature_2m[i]), feels:Math.round(h.apparent_temperature[i]),
+        humid:h.relative_humidity_2m[i], pressure:Math.round(h.surface_pressure[i]),
+        wSpeed:Math.round(h.wind_speed_10m[i]), wDir:h.wind_direction_10m[i],
+        wCard:cardinal(h.wind_direction_10m[i]), gusts:Math.round(h.wind_gusts_10m[i]),
+        pPct:h.precipitation_probability[i], pIn:h.precipitation[i],
+      });
+    }
+    return{abbr:team.abbr,hours,err:false};
+  }catch{return{abbr:team.abbr,hours:[],err:true};}
+}
 
-// ── TIME PARSING (unchanged) ─────────────────────────────────────────────────
-function parseGameTime(str){ /* ... original ... */ }
-function minToLabel(mins){ /* ... original ... */ }
-function getHourData(abbr,targetMins){ /* ... original ... */ }
+async function loadAll(){
+  const btn=document.getElementById('refresh-btn');
+  const icon=document.getElementById('ref-icon');
+  const ov=document.getElementById('overlay');
+  const sub=document.getElementById('ov-sub');
+  const fill=document.getElementById('ov-fill');
+  btn.disabled=true; icon.classList.add('spin');
+  ov.classList.remove('gone'); fill.style.width='0%';
 
-// ── WINDOW CARD (NOW INCLUDES 2026 NOTES AT BOTTOM OF EVERY CARD) ────────────
+  for(let i=0;i<TEAMS.length;i+=5){
+    const batch=TEAMS.slice(i,i+5);
+    sub.textContent=`Fetching ${batch[0].abbr} · ${batch[0].stadium}…`;
+    const res=await Promise.all(batch.map(fetchTeam));
+    res.forEach(r=>allData[r.abbr]=r);
+    fill.style.width=Math.min(Math.round(((i+5)/TEAMS.length)*100),100)+'%';
+  }
+  document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  btn.disabled=false; icon.classList.remove('spin');
+  ov.classList.add('gone');
+  renderTable();
+}
+
+// ── TIME PARSING ─────────────────────────────────────────────────────────────
+function parseGameTime(str){
+  if(!str) return null;
+  str=str.trim().toUpperCase();
+  let h,m=0,isPM=str.includes('PM'),isAM=str.includes('AM');
+  str=str.replace(/[APM\s]/g,'');
+  if(str.includes(':'))[h,m]=str.split(':').map(Number);
+  else if(str.length<=2) h=Number(str);
+  else{h=Number(str.slice(0,-2));m=Number(str.slice(-2));}
+  if(isNaN(h)) return null;
+  if(isPM&&h<12) h+=12;
+  if(isAM&&h===12) h=0;
+  if(!isPM&&!isAM&&h<10) h+=12;
+  return h*60+m;
+}
+function minToLabel(mins){
+  if(mins==null) return '—';
+  let h=Math.floor(mins/60)%24,m=mins%60;
+  const ap=h>=12?'PM':'AM';
+  const d=h>12?h-12:(h===0?12:h);
+  return `${d}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function getHourData(abbr,targetMins){
+  const d=allData[abbr];
+  if(!d||d.err||!d.hours.length) return null;
+  const th=Math.floor(targetMins/60);
+  return d.hours.find(h=>h.time.getHours()===th)||null;
+}
+
+// ── UPDATED WINDOW CARD – 2026 NOTES ADDED AT THE BOTTOM OF EVERY DIAGRAM ──
 function buildWindowCard(abbr,offsetMins,label,isGame){
   const gt=gameTimes[abbr];
   const parsed=parseGameTime(gt);
@@ -494,7 +579,6 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
   </div>`;
 
   const windPct=Math.min((h.wSpeed/35)*100,100);
-
   return `<div class="window-card ${gc}">
     <div class="wc-label"><div class="dot"></div>${label}</div>
     <div class="wc-time">${timeLabel}</div>
@@ -503,11 +587,15 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
 
     <div class="wc-stat">
       <span class="wc-stat-l">Humidity</span>
-      <div style="text-align:right"><div class="wc-stat-v ${colHumid(h.humid)}">${h.humid}%</div></div>
+      <div style="text-align:right">
+        <div class="wc-stat-v ${colHumid(h.humid)}">${h.humid}%</div>
+      </div>
     </div>
     <div class="wc-stat">
       <span class="wc-stat-l">Pressure</span>
-      <div style="text-align:right"><div class="wc-stat-v ${colPressure(h.pressure)}">${h.pressure} <span style="font-size:13px;font-weight:400">hPa</span></div></div>
+      <div style="text-align:right">
+        <div class="wc-stat-v ${colPressure(h.pressure)}">${h.pressure} <span style="font-size:13px;font-weight:400">hPa</span></div>
+      </div>
     </div>
     <div class="wc-stat">
       <span class="wc-stat-l">Wind</span>
@@ -518,7 +606,9 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
     </div>
     <div class="wc-stat">
       <span class="wc-stat-l">Gusts</span>
-      <div style="text-align:right"><div class="wc-stat-v ${colGusts(h.gusts)}">${h.gusts} mph</div></div>
+      <div style="text-align:right">
+        <div class="wc-stat-v ${colGusts(h.gusts)}">${h.gusts} mph</div>
+      </div>
     </div>
     <div class="wc-stat">
       <span class="wc-stat-l">Rain %</span>
@@ -529,7 +619,7 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
     </div>
     <div class="wc-wind-bar"><div class="wc-wind-fill" style="width:${windPct}%"></div></div>
 
-    <!-- 2026 NOTES / QUICK RULES – bottom of EVERY diagram -->
+    <!-- 2026 NOTES / QUICK RULES – bottom of every diagram -->
     <div class="wc-notes">
       <div class="wc-notes-label">2026 NOTES / QUICK RULES</div>
       ${getNotes(abbr)}
@@ -563,16 +653,116 @@ function buildExpandPanel(abbr){
   </div>`;
 }
 
-// ── TABLE RENDER, CHEAT RENDER, INTERACTIONS (unchanged except renderTable calls buildExpandPanel) ──
-function renderTable(){ /* ... original renderTable code (it already calls buildExpandPanel) ... */ }
-function renderCheat(){ /* ... original ... */ }
-function toggleTeam(abbr){ /* ... original ... */ }
-function setTime(abbr){ /* ... original ... */ }
-function clearTime(abbr){ /* ... original ... */ }
-function liveUpdate(abbr){ /* ... original ... */ }
-function updateRowGT(abbr){ /* ... original ... */ }
+// ── TABLE RENDER ─────────────────────────────────────────────────────────────
+function renderTable(){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  const divF=document.getElementById('div-filter').value;
+  const sortK=document.getElementById('sort').value;
+  let data=TEAMS.filter(t=>{
+    const mQ=!q||t.abbr.toLowerCase().includes(q)||t.stadium.toLowerCase().includes(q);
+    const mD=divF==='all'||t.division===divF;
+    return mQ&&mD;
+  });
+  if(sortK==='game') data.sort((a,b)=>{
+    const ga=parseGameTime(gameTimes[a.abbr])??9999;
+    const gb=parseGameTime(gameTimes[b.abbr])??9999;
+    return ga-gb||a.abbr.localeCompare(b.abbr);
+  }); else data.sort((a,b)=>a.abbr.localeCompare(b.abbr));
 
-// ── START ────────────────────────────────────────────────────────────────────
+  document.getElementById('status-pill').innerHTML=`<b>${data.length}</b> stadiums`;
+  if(!data.length){document.getElementById('tbody').innerHTML=`<tr class="empty-row"><td colspan="7">No stadiums match</td></tr>`;return;}
+
+  document.getElementById('tbody').innerHTML=data.map((t,idx)=>{
+    const d=allData[t.abbr];
+    const now=d?.hours?.find(h=>h.time.getHours()===new Date().getHours())||d?.hours?.[0];
+    const gt=gameTimes[t.abbr];
+    const isOpen=openTeam===t.abbr;
+    const badge=`<span class="team-badge" style="background:${t.color}">${t.abbr}</span>`;
+    const tempStr=now?`<span class="summary-temp ${tCol(now.temp)}">${now.temp}°F</span>`:'<span style="color:var(--muted)">—</span>';
+    const windStr=now?`<span style="font-weight:600" class="${wColRow(now.wSpeed)}">${now.wSpeed} mph ${now.wCard}</span>`:'—';
+    const precipStr=now?`<span style="font-weight:600" class="${pColRow(now.pPct)}">${now.pPct}%</span>`:'—';
+    const gtStr=gt?`<span class="has-game">⚾ ${gt.toUpperCase()}</span>`:`<span class="no-game">no game set</span>`;
+    return `
+    <tr class="team-row${isOpen?' open':''}" id="tr-${t.abbr}" style="animation-delay:${idx*.02}s" onclick="toggleTeam('${t.abbr}')">
+      <td>${badge}</td>
+      <td><div class="stadium-name">${t.stadium}</div><div class="stadium-div">${t.division}</div></td>
+      <td>${gtStr}</td><td>${tempStr}</td><td>${windStr}</td><td>${precipStr}</td>
+      <td><span class="expand-arrow">▼</span></td>
+    </tr>
+    <tr class="expand-row${isOpen?' open':''}" id="er-${t.abbr}">
+      <td colspan="7">${isOpen?buildExpandPanel(t.abbr):''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CHEAT SHEET RENDER ────────────────────────────────────────────────────────
+function renderCheat(){
+  const q=document.getElementById('cheat-search').value.toLowerCase().trim();
+  const data=CHEAT.filter(r=>!q||r.team.toLowerCase().includes(q)||r.stadium.toLowerCase().includes(q));
+  const teamMap=Object.fromEntries(TEAMS.map(t=>[t.abbr,t.color]));
+  document.getElementById('cheat-tbody').innerHTML=data.map(r=>{
+    const color=teamMap[r.team]||'#333';
+    const badge=`<span class="team-badge" style="background:${color}">${r.team}</span>`;
+    return `<tr>
+      <td>${badge}</td>
+      <td><div class="stadium-name" style="font-size:13px">${r.stadium}</div></td>
+      <td class="dim-val">${r.lf}</td><td class="dim-val">${r.cf}</td><td class="dim-val">${r.rf}</td>
+      <td class="dim-val">${r.lfWall}</td><td class="dim-val">${r.rfWall}</td>
+      <td><span class="wind-friendly">${r.hitter}</span></td>
+      <td><span class="wind-pitcher">${r.pitcher}</span></td>
+      <td class="notes">${r.notes}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────────────
+function toggleTeam(abbr){
+  openTeam=openTeam===abbr?null:abbr;
+  renderTable();
+  if(openTeam) setTimeout(()=>{
+    const inp=document.getElementById(`ti-${abbr}`);
+    if(inp&&!gameTimes[abbr]) inp.focus();
+    document.getElementById(`tr-${abbr}`)?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },50);
+}
+function setTime(abbr){
+  const val=document.getElementById(`ti-${abbr}`)?.value?.trim();
+  if(val) gameTimes[abbr]=val; else delete gameTimes[abbr];
+  const cell=document.querySelector(`#er-${abbr} td`);
+  if(cell) cell.innerHTML=buildExpandPanel(abbr);
+  updateRowGT(abbr);
+}
+function clearTime(abbr){
+  delete gameTimes[abbr];
+  const cell=document.querySelector(`#er-${abbr} td`);
+  if(cell) cell.innerHTML=buildExpandPanel(abbr);
+  updateRowGT(abbr);
+}
+function liveUpdate(abbr){
+  clearTimeout(liveUpdate._t);
+  liveUpdate._t=setTimeout(()=>{
+    const val=document.getElementById(`ti-${abbr}`)?.value?.trim();
+    if(val) gameTimes[abbr]=val;
+    const win=document.getElementById(`windows-${abbr}`);
+    if(!win) return;
+    const parsed=parseGameTime(val);
+    if(parsed!=null) win.innerHTML=`<div class="windows-grid">
+      ${buildWindowCard(abbr,-60,'1H Before',false)}
+      ${buildWindowCard(abbr,0,'First Pitch',true)}
+      ${buildWindowCard(abbr,60,'+1 Hour',false)}
+      ${buildWindowCard(abbr,120,'+2 Hours',false)}
+      ${buildWindowCard(abbr,180,'+3 Hours',false)}
+    </div>`;
+    else win.innerHTML=`<div class="no-time-prompt">Enter a game time above to see the <span>5-window forecast</span></div>`;
+  },350);
+}
+function updateRowGT(abbr){
+  const gt=gameTimes[abbr];
+  const cell=document.querySelector(`#tr-${abbr} td:nth-child(3)`);
+  if(!cell) return;
+  cell.innerHTML=gt?`<span class="has-game">⚾ ${gt.toUpperCase()}</span>`:`<span class="no-game">no game set</span>`;
+}
+
 loadAll();
 </script>
 </body>
