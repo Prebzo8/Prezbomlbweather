@@ -124,21 +124,20 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .wc-stat-v{font-size:18px;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.5px;}
 .wc-stat-sub{font-size:11px;color:var(--muted);text-align:right;margin-top:1px;}
 
-/* NEW: Roof indicator */
+/* Roof indicator */
 .roof-badge{
   display:flex;align-items:center;gap:6px;background:rgba(255,69,69,0.15);color:#ff4545;
   font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:1px;
   padding:4px 10px;border-radius:4px;margin-top:8px;
 }
 
-/* NEW: Wind direction diagram */
+/* Wind direction diagram */
 .wind-diagram{
   width:88px;height:88px;position:relative;margin:8px auto 0;
   background:var(--dim);border-radius:50%;border:3px solid var(--border2);
 }
 .wind-diagram svg{width:100%;height:100%;}
 
-/* Wind bar */
 .wc-wind-bar{background:var(--dim);border-radius:2px;height:4px;margin-top:10px;}
 .wc-wind-fill{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--accent));}
 
@@ -150,7 +149,7 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .no-time-prompt{text-align:center;padding:32px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px;color:var(--dim);}
 .no-time-prompt span{color:var(--accent);}
 
-/* NEW: Stadium Cheat Sheet row that appears after game time is entered */
+/* Stadium Cheat Sheet row (now always shown in dashboard) */
 .cheat-summary{background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:16px;margin-top:24px;}
 .cheat-summary-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;}
 .cheat-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;}
@@ -267,7 +266,7 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
   <button class="tab-btn" id="tab-legend" onclick="switchTab('legend')">🎨 Color Legend</button>
 </div>
 
-<!-- WEATHER VIEW -->
+<!-- WEATHER VIEW (DASHBOARD) -->
 <div id="weather-view">
   <div class="controls-bar">
   <div class="search-wrap">
@@ -415,38 +414,38 @@ const TEAMS=[
   {abbr:'WSN',stadium:'Nationals Park',lat:38.8728,lon:-77.0075,color:'#AB0003',division:'NL East',tz:'ET',roofType:null},
 ];
 
-// ── CHEAT SHEET DATA ─────────────────────────────────────────────────────────
+// ── CHEAT SHEET DATA (3-5 detailed 2026 park factors + weather analysis for each stadium) ─────────────────────────────────────────────────────────
 const CHEAT=[
-  {team:'ARI',stadium:'Chase Field',lf:330,cf:407,rf:335,lfWall:'25',rfWall:'8',hitter:'S, SW, SE',pitcher:'N, NE',notes:'Roof open = S wind = biggest HR boost'},
-  {team:'ATL',stadium:'Truist Park',lf:335,cf:400,rf:325,lfWall:'25',rfWall:'25',hitter:'S, SW',pitcher:'N, NE',notes:'South wind = strongest offensive boost'},
-  {team:'BAL',stadium:'Oriole Park at Camden Yards',lf:333,cf:410,rf:318,lfWall:'7',rfWall:'7',hitter:'S, SW',pitcher:'N, NE',notes:'Short RF porch; S wind boosts HR'},
-  {team:'BOS',stadium:'Fenway Park',lf:310,cf:420,rf:302,lfWall:'37 (Monster)',rfWall:'5–15',hitter:'S, SW',pitcher:'N, NE',notes:'Green Monster still dominates'},
-  {team:'CHC',stadium:'Wrigley Field',lf:355,cf:400,rf:353,lfWall:'15–20',rfWall:'15–20',hitter:'S, SW',pitcher:'N, NE',notes:'Classic "wind blowing out" park'},
-  {team:'CHW',stadium:'Guaranteed Rate Field',lf:330,cf:400,rf:335,lfWall:'8–15',rfWall:'8–15',hitter:'S, SW',pitcher:'N, NE',notes:'Standard open-air park'},
-  {team:'CIN',stadium:'Great American Ball Park',lf:328,cf:404,rf:325,lfWall:'12',rfWall:'12',hitter:'S, SW',pitcher:'N, NE',notes:'Very hitter-friendly when wind out'},
-  {team:'CLE',stadium:'Progressive Field',lf:325,cf:405,rf:325,lfWall:'19',rfWall:'19',hitter:'S, SW',pitcher:'N, NE',notes:'Symmetric but deep CF'},
-  {team:'COL',stadium:'Coors Field',lf:347,cf:415,rf:350,lfWall:'8–25',rfWall:'8–25',hitter:'Any wind (altitude)',pitcher:'Almost never',notes:'Altitude = permanent hitter boost'},
-  {team:'DET',stadium:'Comerica Park',lf:345,cf:420,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'One of deepest CF in MLB'},
-  {team:'HOU',stadium:'Daikin Park',lf:315,cf:435,rf:326,lfWall:'21–90 (train)',rfWall:'21–90',hitter:'S, SW',pitcher:'N, NE',notes:'Tall LF wall; roof usually closed'},
-  {team:'KCR',stadium:'Kauffman Stadium (2026)',lf:347,cf:410,rf:344,lfWall:'8.5',rfWall:'8.5',hitter:'S, SW (much more now)',pitcher:'N, NE',notes:'New 2026: fences in 9–10 ft; walls lowered to 8.5 ft; now much more HR-friendly'},
-  {team:'LAA',stadium:'Angel Stadium',lf:330,cf:396,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Very symmetric'},
-  {team:'LAD',stadium:'Dodger Stadium',lf:330,cf:400,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Nearly symmetric'},
-  {team:'MIA',stadium:'loanDepot Park',lf:340,cf:420,rf:335,lfWall:'8–14',rfWall:'8–14',hitter:'S, SW (roof often closed)',pitcher:'N, NE',notes:'Deep CF; roof usually closed'},
-  {team:'MIL',stadium:'American Family Field',lf:332,cf:400,rf:325,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Retractable roof'},
-  {team:'MIN',stadium:'Target Field',lf:339,cf:404,rf:328,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Open-air, lake breezes common'},
-  {team:'NYM',stadium:'Citi Field',lf:335,cf:405,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Standard modern park'},
-  {team:'NYY',stadium:'Yankee Stadium',lf:318,cf:408,rf:314,lfWall:'8',rfWall:'8',hitter:'S, SW (huge RF boost)',pitcher:'N, NE',notes:'Short RF porch'},
-  {team:'ATH',stadium:'Sutter Health Park (temp)',lf:330,cf:403,rf:325,lfWall:'8–12',rfWall:'8–12',hitter:'S, SW',pitcher:'N, NE',notes:'2026 temp home – minor-league dimensions'},
-  {team:'PHI',stadium:'Citizens Bank Park',lf:330,cf:401,rf:329,lfWall:'8–13',rfWall:'8–13',hitter:'S, SW',pitcher:'N, NE',notes:'No dimension changes 2026; hosting MLB All-Star Game'},
-  {team:'PIT',stadium:'PNC Park',lf:325,cf:399,rf:320,lfWall:'21 (Clemente)',rfWall:'21',hitter:'S, SW',pitcher:'N, NE',notes:'Beautiful river park'},
-  {team:'SDP',stadium:'Petco Park',lf:336,cf:396,rf:322,lfWall:'8–11',rfWall:'8–11',hitter:'S, SW (marine layer)',pitcher:'N, NE',notes:'Deep gaps'},
-  {team:'SEA',stadium:'T-Mobile Park',lf:331,cf:405,rf:327,lfWall:'8',rfWall:'8',hitter:'S, SW (when roof open)',pitcher:'N, NE',notes:'Retractable roof + marine air'},
-  {team:'SFG',stadium:'Oracle Park',lf:339,cf:399,rf:309,lfWall:'8–25',rfWall:'8–25',hitter:'S, SW (bay wind often blows in)',pitcher:'N, NE',notes:'Short RF porch + bay wind'},
-  {team:'STL',stadium:'Busch Stadium',lf:336,cf:400,rf:335,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Standard'},
-  {team:'TBR',stadium:'Tropicana Field (2026)',lf:315,cf:404,rf:322,lfWall:'8–15',rfWall:'8–15',hitter:'S, SW (when roof open)',pitcher:'N, NE',notes:'Dome – roof usually closed'},
-  {team:'TEX',stadium:'Globe Life Field',lf:329,cf:407,rf:326,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Retractable roof'},
-  {team:'TOR',stadium:'Rogers Centre',lf:328,cf:400,rf:328,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Symmetric retractable roof'},
-  {team:'WSN',stadium:'Nationals Park',lf:336,cf:403,rf:335,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'Standard'},
+  {team:'ARI',stadium:'Chase Field',lf:330,cf:407,rf:335,lfWall:'25',rfWall:'8',hitter:'S, SW, SE',pitcher:'N, NE',notes:'• Roof open + S/SW wind = biggest HR boost for hitters (balls carry 30+ ft)<br>• Closed roof = weather irrelevant (pitchers gain control, no wind carry)<br>• Extreme heat (>95°F) adds extra carry for hitters even with roof open<br>• Low humidity in desert air helps fly balls travel farther for hitters<br>• High rain % forces roof closure → instant pitcher advantage'},
+  {team:'ATL',stadium:'Truist Park',lf:335,cf:400,rf:325,lfWall:'25',rfWall:'25',hitter:'S, SW',pitcher:'N, NE',notes:'• South/SW winds blow out to LF/RF = strong hitter boost (more HR)<br>• North winds suppress fly balls = big pitcher edge<br>• Warm humid nights (>80°F) help balls carry for hitters<br>• Light rain or high humidity slightly reduces carry (pitcher friendly)<br>• No roof = full weather impact; wind direction is the #1 factor here'},
+  {team:'BAL',stadium:'Oriole Park at Camden Yards',lf:333,cf:410,rf:318,lfWall:'7',rfWall:'7',hitter:'S, SW',pitcher:'N, NE',notes:'• Short RF porch + S/SW wind = massive HR boost for right-handed hitters<br>• North winds blow in from CF = pitcher advantage, kills deep flies<br>• Mild temps (60-80°F) are ideal; extreme heat helps hitters more<br>• High humidity in summer adds carry for hitters<br>• Rain often leads to delays (no roof) → game-time weather is critical'},
+  {team:'BOS',stadium:'Fenway Park',lf:310,cf:420,rf:302,lfWall:'37 (Monster)',rfWall:'5–15',hitter:'S, SW',pitcher:'N, NE',notes:'• S/SW winds help balls clear the Monster and short RF = huge hitter boost<br>• North winds blow in = pitcher friendly, especially to LF<br>• Green Monster still dominates; cold temps (<50°F) kill carry for hitters<br>• High humidity helps balls travel farther over the Monster<br>• No roof = wind direction changes everything in this historic park'},
+  {team:'CHC',stadium:'Wrigley Field',lf:355,cf:400,rf:353,lfWall:'15–20',rfWall:'15–20',hitter:'S, SW',pitcher:'N, NE',notes:'• Most wind-sensitive park in MLB: S/SW winds = massive hitter boost<br>• North winds blow in from CF = extreme pitcher advantage<br>• Classic “wind blowing out” days create HR festivals<br>• Cold April/May temps often suppress offense even with favorable wind<br>• Ivy walls + wind = unpredictable; always check direction before betting on overs'},
+  {team:'CHW',stadium:'Guaranteed Rate Field',lf:330,cf:400,rf:335,lfWall:'8–15',rfWall:'8–15',hitter:'S, SW',pitcher:'N, NE',notes:'• Standard open-air park: S/SW winds help hitters clear fences<br>• North winds suppress fly balls = pitcher edge<br>• Warm summer nights boost carry for hitters<br>• High humidity common in Chicago summer = slight hitter advantage<br>• No roof = full weather impact; wind is the biggest variable here'},
+  {team:'CIN',stadium:'Great American Ball Park',lf:328,cf:404,rf:325,lfWall:'12',rfWall:'12',hitter:'S, SW',pitcher:'N, NE',notes:'• Very hitter-friendly when wind blows out (S/SW) – short fences help<br>• North winds blow in = strong pitcher advantage<br>• Hot humid Ohio River Valley nights add extra carry for hitters<br>• Rain frequent → check roof status (none) for delays<br>• Altitude is low but heat + wind makes it one of the more offense-friendly NL parks'},
+  {team:'CLE',stadium:'Progressive Field',lf:325,cf:405,rf:325,lfWall:'19',rfWall:'19',hitter:'S, SW',pitcher:'N, NE',notes:'• Symmetric but deep CF; S/SW winds help hitters<br>• New 2025-26 wind tunnel effect favors lefty hitters on S winds<br>• Cold Lake Erie winds in April = pitcher paradise<br>• Warm summer nights + wind out = more HR<br>• No roof = wind direction is the #1 game-changer here'},
+  {team:'COL',stadium:'Coors Field',lf:347,cf:415,rf:350,lfWall:'8–25',rfWall:'8–25',hitter:'Any wind (altitude)',pitcher:'Almost never',notes:'• Altitude (5,280 ft) = permanent hitter boost (balls fly 10-15% farther)<br>• Any wind direction helps hitters more than other parks<br>• Dry air + thin atmosphere = lowest humidity, maximum carry<br>• Night games cooler but still hitter-friendly<br>• Pitchers must rely on movement; fastballs get crushed here'},
+  {team:'DET',stadium:'Comerica Park',lf:345,cf:420,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Deep CF makes it pitcher-friendly most days<br>• S/SW winds help hitters clear fences<br>• Lake breezes often blow in from CF = big pitcher edge<br>• Cold April/May = suppressed offense<br>• Warm summer nights + wind out = rare hitter-friendly days'},
+  {team:'HOU',stadium:'Daikin Park',lf:315,cf:435,rf:326,lfWall:'21–90 (train)',rfWall:'21–90',hitter:'S, SW',pitcher:'N, NE',notes:'• Roof usually closed = weather irrelevant (pitcher control)<br>• When open, S/SW winds boost hitters over short LF<br>• Tall LF wall protects pitchers<br>• Houston heat + humidity = extra carry when roof is open<br>• Rain forces roof closure → instant pitcher advantage'},
+  {team:'KCR',stadium:'Kauffman Stadium',lf:347,cf:410,rf:344,lfWall:'8.5',rfWall:'8.5',hitter:'S, SW (much more now)',pitcher:'N, NE',notes:'• 2026 fences moved in + lowered = now much more HR-friendly<br>• S/SW winds boost hitters significantly<br>• North winds still help pitchers<br>• Hot dry summer nights add carry<br>• New dimensions make wind impact even bigger than before'},
+  {team:'LAA',stadium:'Angel Stadium',lf:330,cf:396,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Very symmetric; S/SW winds help hitters<br>• North winds blow in = pitcher advantage<br>• Southern California marine layer often keeps balls in the yard<br>• Warm dry nights = good carry for hitters<br>• No roof = wind direction decides offense vs pitching'},
+  {team:'LAD',stadium:'Dodger Stadium',lf:330,cf:400,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Nearly symmetric but marine layer often suppresses HR<br>• S/SW winds help hitters; N winds kill carry<br>• Night games cooler = less carry than daytime<br>• Low humidity = balls fly true but not as far as inland parks<br>• Wind is the biggest variable at Chavez Ravine'},
+  {team:'MIA',stadium:'loanDepot park',lf:340,cf:420,rf:335,lfWall:'8–14',rfWall:'8–14',hitter:'S, SW (roof often closed)',pitcher:'N, NE',notes:'• Roof usually closed = weather irrelevant (pitcher paradise)<br>• When open, S/SW winds help hitters<br>• Deep CF + roof = generally pitcher-friendly<br>• Miami heat/humidity when open = extra carry<br>• Rain forces closure → pitchers win every time'},
+  {team:'MIL',stadium:'American Family Field',lf:332,cf:400,rf:325,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Retractable roof: closed = no weather impact<br>• Open + S/SW winds = strong hitter boost<br>• Lake Michigan breezes often blow in when roof open<br>• Warm summer nights help hitters<br>• Roof status is the #1 factor here'},
+  {team:'MIN',stadium:'Target Field',lf:339,cf:404,rf:328,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Open-air with frequent lake breezes blowing in = pitcher edge<br>• S/SW winds help hitters<br>• Cold April/May nights suppress offense heavily<br>• Warm summer nights + wind out = hitter-friendly<br>• Wind direction changes everything in Minnesota'},
+  {team:'NYM',stadium:'Citi Field',lf:335,cf:405,rf:330,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Wind helped the most HR in recent Statcast data<br>• S/SW winds = big hitter boost<br>• North winds blow in = strong pitcher advantage<br>• Marine air from nearby water keeps many balls in the yard<br>• No roof = wind is king at Citi Field'},
+  {team:'NYY',stadium:'Yankee Stadium',lf:318,cf:408,rf:314,lfWall:'8',rfWall:'8',hitter:'S, SW (huge RF boost)',pitcher:'N, NE',notes:'• Short RF porch + S/SW winds = massive HR boost for righties<br>• North winds suppress deep flies<br>• Warm humid summer nights add carry<br>• Wind tunnel effect in the Bronx makes it very wind-sensitive<br>• Classic short-porch hitter park when wind is right'},
+  {team:'ATH',stadium:'Sutter Health Park (temp)',lf:330,cf:403,rf:325,lfWall:'8–12',rfWall:'8–12',hitter:'S, SW',pitcher:'N, NE',notes:'• 2026 temporary minor-league dimensions = more HR than normal<br>• S/SW winds boost hitters<br>• Sacramento Delta breeze often blows out to right-center<br>• Warm Central Valley nights = good carry<br>• Open-air temp venue = full weather impact'},
+  {team:'PHI',stadium:'Citizens Bank Park',lf:330,cf:401,rf:329,lfWall:'8–13',rfWall:'8–13',hitter:'S, SW',pitcher:'N, NE',notes:'• Wind ranked top-3 for suppressing HR in recent years<br>• S/SW winds help hitters; N winds kill flies<br>• Hosting 2026 All-Star Game = extra attention to weather<br>• Warm humid Philly nights = good carry when wind is out<br>• No roof = wind direction is critical'},
+  {team:'PIT',stadium:'PNC Park',lf:325,cf:399,rf:320,lfWall:'21 (Clemente)',rfWall:'21',hitter:'S, SW',pitcher:'N, NE',notes:'• River breeze often blows in from CF = pitcher advantage<br>• S/SW winds help hitters clear Clemente Wall<br>• Beautiful river setting but wind can be unpredictable<br>• Mild Pittsburgh nights = average carry<br>• No roof = check wind before every game'},
+  {team:'SDP',stadium:'Petco Park',lf:336,cf:396,rf:322,lfWall:'8–11',rfWall:'8–11',hitter:'S, SW (marine layer)',pitcher:'N, NE',notes:'• Marine layer + wind often blows in = extreme pitcher park<br>• S/SW winds can help hitters on rare days<br>• Cool San Diego nights = suppressed offense<br>• Deep gaps make extra-base hits common even on calm days<br>• Wind is the #1 suppressor of scoring here'},
+  {team:'SEA',stadium:'T-Mobile Park',lf:331,cf:405,rf:327,lfWall:'8',rfWall:'8',hitter:'S, SW (when roof open)',pitcher:'N, NE',notes:'• One of the toughest hitter parks; wind often blows in<br>• Roof open + S/SW wind = rare hitter boost<br>• Marine air + cool temps = balls die in the air<br>• Roof usually closed in bad weather = pitcher control<br>• Wind + roof status decide everything in Seattle'},
+  {team:'SFG',stadium:'Oracle Park',lf:339,cf:399,rf:309,lfWall:'8–25',rfWall:'8–25',hitter:'S, SW (bay wind often blows in)',pitcher:'N, NE',notes:'• Bay winds often blow in = strong pitcher advantage<br>• Short RF porch + rare S wind = hitter boost<br>• Cool SF temps + marine layer = suppressed HR<br>• Famous for “triples alley” and wind-killed fly balls<br>• Wind direction is legendary here'},
+  {team:'STL',stadium:'Busch Stadium',lf:336,cf:400,rf:335,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Standard dimensions; S/SW winds help hitters<br>• North winds blow in = pitcher edge<br>• Hot humid Midwest summers = good carry<br>• No roof = full weather impact<br>• Wind is the main variable at Busch'},
+  {team:'TBR',stadium:'Tropicana Field (2026)',lf:315,cf:404,rf:322,lfWall:'8–15',rfWall:'8–15',hitter:'S, SW (when roof open)',pitcher:'N, NE',notes:'• Dome usually closed = weather irrelevant (pitcher heaven)<br>• Roof open + S/SW winds = hitter boost<br>• 2026 dimensions slightly more HR-friendly<br>• Rain forces closure → pitchers win<br>• Roof status is everything for Tropicana'},
+  {team:'TEX',stadium:'Globe Life Field',lf:329,cf:407,rf:326,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Retractable roof usually open in good weather<br>• S/SW winds help hitters in Texas heat<br>• Extreme summer heat (>95°F) adds massive carry<br>• Roof closed in rain/extreme heat = pitcher control<br>• Hot dry air = one of the most hitter-friendly when open'},
+  {team:'TOR',stadium:'Rogers Centre',lf:328,cf:400,rf:328,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Symmetric retractable roof<br>• Roof open + S/SW winds = hitter advantage<br>• Closed roof = no weather impact<br>• Toronto lake breezes often blow in when open<br>• Roof status + wind = key factors'},
+  {team:'WSN',stadium:'Nationals Park',lf:336,cf:403,rf:335,lfWall:'8',rfWall:'8',hitter:'S, SW',pitcher:'N, NE',notes:'• Standard modern park<br>• S/SW winds help hitters<br>• North winds blow in = pitcher edge<br>• Humid DC summers = good carry<br>• No roof = full weather impact; wind is the biggest variable'}
 ];
 
 // ── STATE ────────────────────────────────────────────────────────────────────
@@ -514,7 +513,7 @@ function getNotes(abbr){
   return entry?entry.notes:'No 2026 notes available';
 }
 
-// ── STADIUM CHEAT SHEET ROW ──────────────────────────────────────────────────
+// ── STADIUM CHEAT SHEET ROW (now always shown in dashboard) ────────────────────────
 function buildStadiumCheatSummary(abbr){
   const row=CHEAT.find(r=>r.team===abbr);
   if(!row) return '';
@@ -530,13 +529,13 @@ function buildStadiumCheatSummary(abbr){
   <div><div class="cheat-summary-label">Pitcher-Friendly Winds</div><div class="cheat-summary-value">${row.pitcher}</div></div>
   </div>
   <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border2);">
-  <div class="cheat-summary-label">2026 NOTES / QUICK RULES</div>
+  <div class="cheat-summary-label">2026 NOTES / QUICK RULES (Park Factors + Weather Analysis)</div>
   <div style="color:var(--text);line-height:1.5;">${row.notes}</div>
   </div>
   </div>`;
 }
 
-// ── NEW: ROOF INDICATOR ──────────────────────────────────────────────────────
+// ── ROOF INDICATOR ───────────────────────────────────────────────────────────
 function getRoofIndicator(abbr, h){
   const team=TEAMS.find(t=>t.abbr===abbr);
   if(!team || !team.roofType) return '';
@@ -546,7 +545,7 @@ function getRoofIndicator(abbr, h){
   return `<div class="roof-badge"><span style="font-size:18px">🏠</span> ${label} — weather data irrelevant</div>`;
 }
 
-// ── NEW: WIND DIRECTION DIAGRAM ──────────────────────────────────────────────
+// ── WIND DIRECTION DIAGRAM ───────────────────────────────────────────────────
 function buildWindDiagram(wDir, wCard, wSpeed){
   const blowDeg = (wDir + 180) % 360;
   const rot = (blowDeg - 90) % 360;
@@ -576,7 +575,7 @@ function buildWindDiagram(wDir, wCard, wSpeed){
   </div>`;
 }
 
-// ── WINDOW CARD (now includes roof indicator + wind diagram) ─────────────────
+// ── WINDOW CARD ──────────────────────────────────────────────────────────────
 function buildWindowCard(abbr,offsetMins,label,isGame){
   const gt=gameTimes[abbr];
   const parsed=parseGameTime(gt);
@@ -635,7 +634,10 @@ function buildExpandPanel(abbr){
   ${buildWindowCard(abbr,120,'+2 Hours',false)}
   ${buildWindowCard(abbr,180,'+3 Hours',false)}
   </div>`:`<div class="no-time-prompt">Enter a game time above to see the <span>5-window forecast</span></div>`;
-  const cheatSection = hasTime ? buildStadiumCheatSummary(abbr) : '';
+
+  // Park factors & weather analysis now ALWAYS shown in the dashboard (even before game time)
+  const cheatSection = buildStadiumCheatSummary(abbr);
+
   return `<div class="expand-panel">
   <div class="time-entry">
   <label>⏱ Game Time</label>
