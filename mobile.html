@@ -12,53 +12,57 @@
 })();
 </script>
 <!-- ── END DESKTOP REDIRECT ── -->
-<!-- ── GEO-BLOCK: Puerto Rico ── -->
+<!-- ── GEO-BLOCK: NY/NJ only + VPN/Proxy ── -->
 <script>
 (function(){
-  var BLOCKED_REGION = 'PR'; // Puerto Rico region code
-  var BLOCKED_COUNTRY = 'US';
-  var BLOCKED_LABEL = 'Puerto Rico';
 
-  function showBlock(){
+  function showBlock(reason){
     document.addEventListener('DOMContentLoaded', function(){
+      var messages = {
+        region: 'This site is only available in the New York / New Jersey area.',
+        vpn:    'VPN, proxy, and Tor connections are not permitted on this site.'
+      };
       document.body.innerHTML = [
-        '<div style="',
-          'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;',
           'min-height:100vh;background:#080b10;color:#dce8f5;',
-          'font-family:\'Barlow Condensed\',\'Arial Narrow\',sans-serif;text-align:center;padding:32px;',
-        '">',
+          'font-family:\'Barlow Condensed\',\'Arial Narrow\',sans-serif;text-align:center;padding:32px;">',
           '<div style="font-size:52px;margin-bottom:24px;">🚫</div>',
-          '<div style="font-size:32px;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:#f0c040;margin-bottom:12px;">Access Restricted</div>',
+          '<div style="font-size:32px;font-weight:900;letter-spacing:3px;text-transform:uppercase;',
+            'color:#f0c040;margin-bottom:12px;">Access Restricted</div>',
           '<div style="font-size:16px;color:#4a6080;max-width:480px;line-height:1.7;">',
-            'This site is not available in your region (<strong style="color:#dce8f5;">' + BLOCKED_LABEL + '</strong>).',
+            messages[reason] || messages.region,
           '</div>',
         '</div>'
       ].join('');
     });
   }
 
-  // Prevent page rendering early
-  function blockNow(){
-    document.addEventListener('DOMContentLoaded', function(){
-      var overlay = document.getElementById('overlay');
-      if(overlay) overlay.style.display = 'flex';
-    });
-    showBlock();
-  }
-
   fetch('https://ipapi.co/json/')
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if(
-        (d.country_code === BLOCKED_COUNTRY && d.region_code === BLOCKED_REGION) ||
-        d.country_code === 'PR'
-      ){
-        blockNow();
+
+      // ── Step 1: Must be US, NY or NJ ──
+      var allowedStates = ['NY', 'NJ'];
+      if(d.country_code !== 'US' || allowedStates.indexOf(d.region_code) === -1){
+        showBlock('region');
+        return;
       }
+
+      // ── Step 2: VPN / Proxy / Tor check ──
+      if(!d.ip) return;
+      fetch('https://proxycheck.io/v2/' + d.ip + '?vpn=1&asn=1')
+        .then(function(r){ return r.json(); })
+        .then(function(vpn){
+          var info = vpn[d.ip];
+          if(info && (info.proxy === 'yes' || info.type === 'VPN' || info.type === 'TOR')){
+            showBlock('vpn');
+          }
+        })
+        .catch(function(){});
+
     })
-    .catch(function(){
-      // On API failure, allow access (fail open)
-    });
+    .catch(function(){});
+
 })();
 </script>
 <!-- ── END GEO-BLOCK ── -->
