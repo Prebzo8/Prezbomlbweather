@@ -1,39 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- ── MOBILE REDIRECT ── -->
+<!-- Charset + viewport MUST come first (charset must be within the first 1024 bytes) -->
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MLB WEATHER HQ</title>
+
+<!--
+  ⚠️ SECURITY NOTE — READ ME
+  The geo-block and password gate below are CLIENT-SIDE ONLY. They deter casual
+  visitors but are trivially bypassed by anyone who disables JavaScript or opens
+  DevTools. If NY/NJ access restriction or password protection is a real
+  requirement (compliance, private data, etc.), it MUST also be enforced
+  SERVER-SIDE — e.g. Cloudflare Access / geo firewall rules, HTTP basic auth,
+  or Netlify/Vercel password protection. Do not rely on this file alone.
+-->
+
+<!-- Hide page content until the access checks pass (prevents content flash
+     behind the gate). The gate/block overlays themselves stay visible. -->
+<style id="access-style">
+  html.access-pending body > *:not(#pwg-gate):not(#geo-block){visibility:hidden;}
+</style>
+<script>
+document.documentElement.classList.add('access-pending');
+
+// Shared access state so the geo-block and password gate never fight each other
+window.__ACCESS = {
+  blocked: false,          // set true when geo/VPN check fails
+  reveal: function(){      // show page content (called after password unlock)
+    if(!this.blocked) document.documentElement.classList.remove('access-pending');
+  },
+  onReady: function(fn){   // run fn now if DOM is ready, else on DOMContentLoaded
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', fn);
+    } else { fn(); }
+  }
+};
+</script>
+
+<!-- ── MOBILE REDIRECT ──
+     UA-based only: checking window.innerWidth redirected desktop users who
+     happened to have a narrow window. URL is resolved relative to the current
+     page (works in subdirectories) and the query string is preserved. -->
 <script>
 (function(){
-  var isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-    || (window.innerWidth <= 768);
-  if(isMobile && !window.location.pathname.endsWith('mobile.html')){
-    window.location.replace(window.location.origin + '/mobile.html');
+  var isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if(isMobile && !/mobile\.html$/.test(window.location.pathname)){
+    try{
+      var target = new URL('mobile.html', window.location.href);
+      target.search = window.location.search; // keep any query params
+      window.location.replace(target.href);
+    }catch(e){ /* URL API unavailable — stay on this page */ }
   }
 })();
 </script>
 <!-- ── END MOBILE REDIRECT ── -->
-<!-- ── GEO-BLOCK: NY/NJ only + VPN/Proxy ── -->
+
+<!-- ── GEO-BLOCK: NY/NJ only + VPN/Proxy (client-side deterrent — see note above) ── -->
 <script>
 (function(){
 
   function showBlock(reason){
-    document.addEventListener('DOMContentLoaded', function(){
+    window.__ACCESS.blocked = true;
+    window.__ACCESS.onReady(function(){
       var messages = {
         region: 'This site is only available in the New York / New Jersey area.',
         vpn:    'VPN, proxy, and Tor connections are not permitted on this site.'
       };
+      // Remove the password gate if it's showing — the block screen wins
+      var gate = document.getElementById('pwg-gate');
+      if(gate) gate.remove();
       document.body.innerHTML = [
-        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;',
+        '<div id="geo-block" style="display:flex;flex-direction:column;align-items:center;justify-content:center;',
           'min-height:100vh;background:#080b10;color:#dce8f5;',
           'font-family:\'Barlow Condensed\',\'Arial Narrow\',sans-serif;text-align:center;padding:32px;">',
           '<div style="font-size:52px;margin-bottom:24px;">🚫</div>',
           '<div style="font-size:32px;font-weight:900;letter-spacing:3px;text-transform:uppercase;',
             'color:#f0c040;margin-bottom:12px;">Access Restricted</div>',
-          '<div style="font-size:16px;color:#4a6080;max-width:480px;line-height:1.7;">',
+          '<div style="font-size:16px;color:#5f7a9e;max-width:480px;line-height:1.7;">',
             messages[reason] || messages.region,
           '</div>',
         '</div>'
       ].join('');
+      document.documentElement.classList.remove('access-pending');
     });
   }
 
@@ -58,20 +107,48 @@
             showBlock('vpn');
           }
         })
-        .catch(function(){});
+        .catch(function(e){
+          // Fail-open on VPN-check outage, but make it visible in the console.
+          console.warn('[geo-block] VPN check unavailable — allowing access. Enforce server-side for real protection.', e);
+        });
 
     })
-    .catch(function(){});
+    .catch(function(e){
+      // Fail-open on geo-API outage (ipapi.co free tier: ~1,000 req/day).
+      console.warn('[geo-block] Geo check unavailable — allowing access. Enforce server-side for real protection.', e);
+    });
 
 })();
 </script>
 <!-- ── END GEO-BLOCK ── -->
 
-<!-- ── PASSWORD GATE ── -->
+<!-- ── PASSWORD GATE (client-side deterrent — see note above) ──
+     The password is no longer stored in plaintext; the input is hashed with
+     SHA-256 and compared against a stored digest. A tiny djb2 fallback covers
+     non-secure (plain http) contexts where crypto.subtle is unavailable. -->
 <script>
 (function(){
-  var CORRECT = '1225';
+  var HASH_SHA256 = '6ecf763ff6e7cef7b47e6611e1bf76fe2608a2e32a97b2d88b083ae1d8d02c82';
+  var HASH_DJB2   = 2088290671;
   var SESSION_KEY = 'pwg_unlocked';
+
+  function djb2(str){
+    var h = 5381;
+    for(var i = 0; i < str.length; i++){ h = (((h << 5) + h) + str.charCodeAt(i)) >>> 0; }
+    return h;
+  }
+
+  function checkPassword(value){
+    if(window.crypto && crypto.subtle && window.TextEncoder){
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)).then(function(buf){
+        var hex = Array.from(new Uint8Array(buf)).map(function(b){
+          return b.toString(16).padStart(2, '0');
+        }).join('');
+        return hex === HASH_SHA256;
+      });
+    }
+    return Promise.resolve(djb2(value) === HASH_DJB2);
+  }
 
   function alreadyUnlocked(){
     try{ return sessionStorage.getItem(SESSION_KEY) === '1'; }catch(e){ return false; }
@@ -79,6 +156,7 @@
 
   function unlock(){
     try{ sessionStorage.setItem(SESSION_KEY, '1'); }catch(e){}
+    window.__ACCESS.reveal();
     var gate = document.getElementById('pwg-gate');
     if(gate){
       gate.style.opacity = '0';
@@ -88,9 +166,13 @@
   }
 
   function showGate(){
-    document.addEventListener('DOMContentLoaded', function(){
+    window.__ACCESS.onReady(function(){
+      if(window.__ACCESS.blocked) return; // geo-block already took over
       var gate = document.createElement('div');
       gate.id = 'pwg-gate';
+      gate.setAttribute('role', 'dialog');
+      gate.setAttribute('aria-modal', 'true');
+      gate.setAttribute('aria-labelledby', 'pwg-title');
       gate.innerHTML = [
         '<style>',
           '#pwg-gate{position:fixed;inset:0;background:#080b10;z-index:99999;',
@@ -102,7 +184,7 @@
           '#pwg-icon{font-size:42px;margin-bottom:18px;}',
           '#pwg-title{font-size:28px;font-weight:900;letter-spacing:3px;text-transform:uppercase;',
             'color:#fff;margin-bottom:6px;}',
-          '#pwg-sub{font-size:13px;color:#4a6080;letter-spacing:1.5px;text-transform:uppercase;',
+          '#pwg-sub{font-size:13px;color:#5f7a9e;letter-spacing:1.5px;text-transform:uppercase;',
             'margin-bottom:28px;}',
           '#pwg-input{width:100%;background:#111820;border:1px solid #243040;border-radius:6px;',
             'padding:14px 18px;color:#dce8f5;font-family:"Barlow Condensed","Arial Narrow",sans-serif;',
@@ -126,9 +208,9 @@
           '<div id="pwg-icon">⚾🔒</div>',
           '<div id="pwg-title">MLB Weather HQ</div>',
           '<div id="pwg-sub">Enter password to continue</div>',
-          '<input id="pwg-input" type="password" placeholder="••••" maxlength="20" autocomplete="off"/>',
-          '<button id="pwg-btn">Unlock</button>',
-          '<div id="pwg-err"></div>',
+          '<input id="pwg-input" type="password" placeholder="••••" maxlength="20" autocomplete="off" aria-label="Password"/>',
+          '<button id="pwg-btn" type="button">Unlock</button>',
+          '<div id="pwg-err" role="alert" aria-live="polite"></div>',
         '</div>'
       ].join('');
       document.body.appendChild(gate);
@@ -136,18 +218,24 @@
       var input = document.getElementById('pwg-input');
       var btn   = document.getElementById('pwg-btn');
       var err   = document.getElementById('pwg-err');
+      var busy  = false;
 
       function attempt(){
-        if(input.value === CORRECT){
-          err.textContent = '';
-          unlock();
-        } else {
-          err.textContent = 'Incorrect password';
-          input.value = '';
-          gate.classList.add('shake');
-          setTimeout(function(){ gate.classList.remove('shake'); }, 400);
-          input.focus();
-        }
+        if(busy) return;
+        busy = true;
+        checkPassword(input.value).then(function(ok){
+          busy = false;
+          if(ok){
+            err.textContent = '';
+            unlock();
+          } else {
+            err.textContent = 'Incorrect password';
+            input.value = '';
+            gate.classList.add('shake');
+            setTimeout(function(){ gate.classList.remove('shake'); }, 400);
+            input.focus();
+          }
+        });
       }
 
       btn.addEventListener('click', attempt);
@@ -156,26 +244,28 @@
     });
   }
 
-  if(!alreadyUnlocked()) showGate();
+  if(alreadyUnlocked()){ window.__ACCESS.onReady(function(){ window.__ACCESS.reveal(); }); }
+  else showGate();
 })();
 </script>
 <!-- ── END PASSWORD GATE ── -->
 
-<!-- Favicons deployed -->  
+<!-- Favicons -->
 <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="shortcut icon" href="/favicon.ico" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-title" content="PrezboWeather" />
 <link rel="manifest" href="/site.webmanifest" />
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB WEATHER HQ</title>
+
+<!-- Fonts: preconnect speeds up first paint; display=swap avoids invisible text -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
   --bg:#080b10; --surface:#0d1219; --panel:#111820; --border:#1c2533; --border2:#243040;
-  --text:#dce8f5; --muted:#4a6080; --dim:#2a3a50; --accent:#f0c040;
+  --text:#dce8f5; --muted:#5f7a9e; /* was #4a6080 — lightened for WCAG contrast on dark bg */ --dim:#2a3a50; --accent:#f0c040;
   --c-red:#ff4545; --c-yellow:#f0c040; --c-dull:#6fcf60; --c-green:#30d98a;
   --blue:#3b9bff; --orange:#ff8c30;
 }
@@ -563,7 +653,7 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
   <div class="header-right">
   <div class="live-badge"><div class="live-dot"></div> Live</div>
   <div id="last-updated"></div>
-  <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">
+  <button class="refresh-btn" id="refresh-btn" type="button">
   <svg id="ref-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
   Refresh
   </button>
@@ -588,31 +678,31 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 </div>
 
 <!-- TABS -->
-<div class="tab-bar">
-  <button class="tab-btn active" id="tab-weather" onclick="switchTab('weather')">⛅ Weather Dashboard</button>
-  <button class="tab-btn" id="tab-firstpitch" onclick="switchTab('firstpitch')">⚾ First Pitch</button>
-  <button class="tab-btn" id="tab-cheat" onclick="switchTab('cheat')">🏟️ Stadium Cheat Sheet</button>
-  <button class="tab-btn" id="tab-wind" onclick="switchTab('wind')">🌬️ Wind Cheat Sheet</button>
-  <button class="tab-btn" id="tab-legend" onclick="switchTab('legend')">🎨 Color Legend</button>
+<div class="tab-bar" role="tablist" aria-label="Dashboard sections">
+  <button class="tab-btn active" id="tab-weather" role="tab" aria-selected="true" aria-controls="weather-view" data-tab="weather">⛅ Weather Dashboard</button>
+  <button class="tab-btn" id="tab-firstpitch" role="tab" aria-selected="false" aria-controls="firstpitch-view" data-tab="firstpitch">⚾ First Pitch</button>
+  <button class="tab-btn" id="tab-cheat" role="tab" aria-selected="false" aria-controls="cheat-view" data-tab="cheat">🏟️ Stadium Cheat Sheet</button>
+  <button class="tab-btn" id="tab-wind" role="tab" aria-selected="false" aria-controls="wind-view" data-tab="wind">🌬️ Wind Cheat Sheet</button>
+  <button class="tab-btn" id="tab-legend" role="tab" aria-selected="false" aria-controls="legend-view" data-tab="legend">🎨 Color Legend</button>
 </div>
 
 <!-- WEATHER VIEW (DASHBOARD) -->
-<div id="weather-view">
+<div id="weather-view" role="tabpanel" aria-labelledby="tab-weather">
   <div class="controls-bar">
   <div class="search-wrap">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-  <input class="search-input" id="search" type="text" placeholder="Search team or stadium…" oninput="renderTable()"/>
+  <input class="search-input" id="search" type="text" placeholder="Search team or stadium…" aria-label="Search team or stadium"/>
   </div>
   <div class="divider"></div>
   <span class="ctrl-label">Division</span>
-  <select class="ctrl-select" id="div-filter" onchange="renderTable()">
+  <select class="ctrl-select" id="div-filter" aria-label="Filter by division">
   <option value="all">All Teams</option>
   <option value="AL East">AL East</option><option value="AL Central">AL Central</option><option value="AL West">AL West</option>
   <option value="NL East">NL East</option><option value="NL Central">NL Central</option><option value="NL West">NL West</option>
   </select>
   <div class="divider"></div>
   <span class="ctrl-label">Sort</span>
-  <select class="ctrl-select" id="sort" onchange="renderTable()">
+  <select class="ctrl-select" id="sort" aria-label="Sort order">
   <option value="alpha">Team A–Z</option>
   <option value="game">Game Time</option>
   </select>
@@ -632,20 +722,20 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 </div>
 
 <!-- FIRST PITCH VIEW -->
-<div id="firstpitch-view" style="display:none;">
+<div id="firstpitch-view" role="tabpanel" aria-labelledby="tab-firstpitch" style="display:none;">
   <div class="fp-controls-bar">
     <div style="display:flex;align-items:center;gap:10px;flex:1;">
-      <label class="fp-date-label">📅 Date</label>
-      <input type="date" id="fp-date" class="fp-date-input" onchange="renderFirstPitch()"/>
+      <label class="fp-date-label" for="fp-date">📅 Date</label>
+      <input type="date" id="fp-date" class="fp-date-input"/>
     </div>
     <div class="fp-status" id="fp-status">Loading today's games…</div>
-    <button class="fp-refresh-btn" onclick="renderFirstPitch()">
+    <button class="fp-refresh-btn" id="fp-refresh-btn" type="button">
       <svg id="fp-ref-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
       Refresh
     </button>
   </div>
   <div class="fp-header-strip">
-    <span class="fp-header-label">⚾ HOME GAMES ONLY — <em>vs</em> matchups · First Pitch Dashboard</span>
+    <span class="fp-header-label">⚾ FULL SCHEDULE — home team listed first · First Pitch Dashboard</span>
     <span class="fp-legend">
       <span class="fp-leg-item"><span class="fp-dot fp-dot-live"></span>Live</span>
       <span class="fp-leg-item"><span class="fp-dot fp-dot-pre"></span>Scheduled</span>
@@ -665,11 +755,11 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 </div>
 
 <!-- CHEAT SHEET VIEW -->
-<div id="cheat-view">
+<div id="cheat-view" role="tabpanel" aria-labelledby="tab-cheat">
   <div class="cheat-search-bar">
   <div class="search-wrap">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-  <input class="cheat-search search-input" id="cheat-search" type="text" placeholder="Search team or stadium…" oninput="renderCheat()"/>
+  <input class="cheat-search search-input" id="cheat-search" type="text" placeholder="Search team or stadium…" aria-label="Search team or stadium"/>
   </div>
   </div>
   <div class="cheat-table-wrap">
@@ -686,11 +776,11 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 </div>
 
 <!-- WIND CHEAT SHEET VIEW -->
-<div id="wind-view">
+<div id="wind-view" role="tabpanel" aria-labelledby="tab-wind">
   <div class="wind-search-bar">
   <div class="search-wrap">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-  <input class="cheat-search search-input" id="wind-search" type="text" placeholder="Search team or stadium…" oninput="renderWind()"/>
+  <input class="cheat-search search-input" id="wind-search" type="text" placeholder="Search team or stadium…" aria-label="Search team or stadium"/>
   </div>
   <span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">All 8 wind directions · impact per stadium</span>
   </div>
@@ -707,7 +797,7 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 </div>
 
 <!-- LEGEND VIEW -->
-<div id="legend-view" style="display:none;padding:24px 32px;">
+<div id="legend-view" role="tabpanel" aria-labelledby="tab-legend" style="display:none;padding:24px 32px;">
   <div class="legend-section">
   <div class="legend-title">How to read the color codes</div>
   <div class="legend-grid">
@@ -771,7 +861,7 @@ const TEAMS=[
   {abbr:'BAL',stadium:'Oriole Park at Camden Yards',lat:39.2852,lon:-76.6201,color:'#DF4601',division:'AL East',tz:'ET',roofType:null},
   {abbr:'BOS',stadium:'Fenway Park',lat:42.3466,lon:-71.0988,color:'#BD3039',division:'AL East',tz:'ET',roofType:null},
   {abbr:'CHC',stadium:'Wrigley Field',lat:41.9484,lon:-87.6553,color:'#0E3386',division:'NL Central',tz:'CT',roofType:null},
-  {abbr:'CHW',stadium:'Guaranteed Rate Field',lat:41.8309,lon:-87.6351,color:'#27251F',division:'AL Central',tz:'CT',roofType:null},
+  {abbr:'CHW',stadium:'Rate Field',lat:41.8309,lon:-87.6351,color:'#27251F',division:'AL Central',tz:'CT',roofType:null},
   {abbr:'CIN',stadium:'Great American Ball Park',lat:39.1072,lon:-84.5077,color:'#C6011F',division:'NL Central',tz:'ET',roofType:null},
   {abbr:'CLE',stadium:'Progressive Field',lat:41.4951,lon:-81.6871,color:'#00385D',division:'AL Central',tz:'ET',roofType:null},
   {abbr:'COL',stadium:'Coors Field',lat:39.756,lon:-104.9942,color:'#33006F',division:'NL West',tz:'MT',roofType:null},
@@ -805,7 +895,7 @@ const CHEAT=[
   {team:'BAL',stadium:'Oriole Park at Camden Yards',lf:333,cf:410,rf:318,lfWall:'7',rfWall:'7',hitter:'S, SW',pitcher:'N, NE',notes:'• Short RF porch + S/SW wind = massive HR boost for right-handed hitters<br>• North winds blow in from CF = pitcher advantage, kills deep flies<br>• Mild temps (60-80°F) are ideal; extreme heat helps hitters more<br>• High humidity in summer adds carry for hitters<br>• Rain often leads to delays (no roof) → game-time weather is critical'},
   {team:'BOS',stadium:'Fenway Park',lf:310,cf:420,rf:302,lfWall:'37 (Monster)',rfWall:'5–15',hitter:'S, SW',pitcher:'N, NE',notes:'• S/SW winds help balls clear the Monster and short RF = huge hitter boost<br>• North winds blow in = pitcher friendly, especially to LF<br>• Green Monster still dominates; cold temps (<50°F) kill carry for hitters<br>• High humidity helps balls travel farther over the Monster<br>• No roof = wind direction changes everything in this historic park'},
   {team:'CHC',stadium:'Wrigley Field',lf:355,cf:400,rf:353,lfWall:'15–20',rfWall:'15–20',hitter:'S, SW',pitcher:'N, NE',notes:'• Most wind-sensitive park in MLB: S/SW winds = massive hitter boost<br>• North winds blow in from CF = extreme pitcher advantage<br>• Classic “wind blowing out” days create HR festivals<br>• Cold April/May temps often suppress offense even with favorable wind<br>• Ivy walls + wind = unpredictable; always check direction before betting on overs'},
-  {team:'CHW',stadium:'Guaranteed Rate Field',lf:330,cf:400,rf:335,lfWall:'8–15',rfWall:'8–15',hitter:'NW, W, N',pitcher:'S, SE',notes:'• Park faces SE (home plate at SE corner) — CF points toward NW<br>• NW/W/N winds blow OUT toward CF/LF = hitter boost; most HR days come on NW wind<br>• S/SE winds blow IN from the outfield = strong pitcher advantage (wind blows in ~42% of games)<br>• Warm summer nights + NW wind = rare but powerful HR conditions<br>• No roof = check direction carefully — wind impact is opposite of most standard-facing parks'},
+  {team:'CHW',stadium:'Rate Field',lf:330,cf:400,rf:335,lfWall:'8–15',rfWall:'8–15',hitter:'NW, W, N',pitcher:'S, SE',notes:'• Park faces SE (home plate at SE corner) — CF points toward NW<br>• NW/W/N winds blow OUT toward CF/LF = hitter boost; most HR days come on NW wind<br>• S/SE winds blow IN from the outfield = strong pitcher advantage (wind blows in ~42% of games)<br>• Warm summer nights + NW wind = rare but powerful HR conditions<br>• No roof = check direction carefully — wind impact is opposite of most standard-facing parks'},
   {team:'CIN',stadium:'Great American Ball Park',lf:328,cf:404,rf:325,lfWall:'12',rfWall:'12',hitter:'S, SW',pitcher:'N, NE',notes:'• Very hitter-friendly when wind blows out (S/SW) – short fences help<br>• North winds blow in = strong pitcher advantage<br>• Hot humid Ohio River Valley nights add extra carry for hitters<br>• Rain frequent → check roof status (none) for delays<br>• Altitude is low but heat + wind makes it one of the more offense-friendly NL parks'},
   {team:'CLE',stadium:'Progressive Field',lf:325,cf:405,rf:325,lfWall:'19',rfWall:'19',hitter:'S, SW',pitcher:'N, NE',notes:'• Symmetric but deep CF; S/SW winds help hitters<br>• New 2025-26 wind tunnel effect favors lefty hitters on S winds<br>• Cold Lake Erie winds in April = pitcher paradise<br>• Warm summer nights + wind out = more HR<br>• No roof = wind direction is the #1 game-changer here'},
   {team:'COL',stadium:'Coors Field',lf:347,cf:415,rf:350,lfWall:'8–25',rfWall:'8–25',hitter:'Any wind (altitude)',pitcher:'Almost never',notes:'• Altitude (5,280 ft) = permanent hitter boost (balls fly 10-15% farther)<br>• Any wind direction helps hitters more than other parks<br>• Dry air + thin atmosphere = lowest humidity, maximum carry<br>• Night games cooler but still hitter-friendly<br>• Pitchers must rely on movement; fastballs get crushed here'},
@@ -906,14 +996,14 @@ const WIND=[
   {team:'CHC',windFrom:'Southwest',blowsTo:'northeast toward CF',impact:'Very strong tailwind blowing out directly aligned with center field. Maximum carry.',level:'Very Strongly Hitter-Friendly'},
   {team:'CHC',windFrom:'West',blowsTo:'east toward RF',impact:'Moderate outward tailwind component. Increases carry especially to right field.',level:'Hitter-Friendly'},
   {team:'CHC',windFrom:'Northwest',blowsTo:'southeast toward LF',impact:'Mild headwind with cross component. Slight suppression of distance.',level:'Mildly Pitcher-Friendly'},
-  {team:'CHW',windFrom:'North',blowsTo:'south toward RF/LF',impact:'Outward tailwind at Guaranteed Rate (CF faces NW). N wind pushes balls toward RF/LF — solid carry boost.',level:'Hitter-Friendly'},
+  {team:'CHW',windFrom:'North',blowsTo:'south toward RF/LF',impact:'Outward tailwind at Rate Field (CF faces NW). N wind pushes balls toward RF/LF — solid carry boost.',level:'Hitter-Friendly'},
   {team:'CHW',windFrom:'Northeast',blowsTo:'southwest toward LF',impact:'Outward cross tailwind toward LF. Increases carry for pull-side left fielders.',level:'Mildly Hitter-Friendly'},
   {team:'CHW',windFrom:'East',blowsTo:'west toward RF',impact:'Cross-outfield tailwind component. Mild boost to RF carry; not aligned with CF but still outward.',level:'Mildly Hitter-Friendly'},
-  {team:'CHW',windFrom:'Southeast',blowsTo:'northwest toward CF',impact:'Direct headwind blowing IN from the SE — straight into CF. Maximum fly ball suppression at Guaranteed Rate.',level:'Very Strongly Pitcher-Friendly'},
+  {team:'CHW',windFrom:'Southeast',blowsTo:'northwest toward CF',impact:'Direct headwind blowing IN from the SE — straight into CF. Maximum fly ball suppression at Rate Field.',level:'Very Strongly Pitcher-Friendly'},
   {team:'CHW',windFrom:'South',blowsTo:'north toward outfield',impact:'Strong inward headwind from S/SE quadrant into the outfield. Knocks down fly balls across all fields.',level:'Strongly Pitcher-Friendly'},
   {team:'CHW',windFrom:'Southwest',blowsTo:'northeast',impact:'Inward headwind from outfield side with cross push. Suppresses fly ball distance significantly.',level:'Pitcher-Friendly'},
   {team:'CHW',windFrom:'West',blowsTo:'east toward RF',impact:'Mild cross-outward component toward RF. Slight carry boost, especially for opposite-field hitters.',level:'Mildly Hitter-Friendly'},
-  {team:'CHW',windFrom:'Northwest',blowsTo:'southeast toward home plate',impact:'Best hitter wind at Guaranteed Rate — NW blows directly OUT toward CF/home. Maximum carry boost.',level:'Very Strongly Hitter-Friendly'},
+  {team:'CHW',windFrom:'Northwest',blowsTo:'southeast toward home plate',impact:'Best hitter wind at Rate Field — NW blows directly OUT toward CF/home. Maximum carry boost.',level:'Very Strongly Hitter-Friendly'},
   {team:'CIN',windFrom:'North',blowsTo:'south toward home plate',impact:'Wind blows in from the Ohio River side. Strong headwind suppresses fly balls at Great American Ball Park.',level:'Strongly Pitcher-Friendly'},
   {team:'CIN',windFrom:'Northeast',blowsTo:'southwest toward home plate',impact:'Very strong headwind from CF/RF area blowing in from river. Maximum suppression of fly ball distance.',level:'Very Strongly Pitcher-Friendly'},
   {team:'CIN',windFrom:'East',blowsTo:'west toward LF',impact:'Moderate inward headwind with cross component. Suppresses fly ball distance overall.',level:'Pitcher-Friendly'},
@@ -1145,6 +1235,16 @@ const WEATHER_LINKS={
   WSN:'https://weather.com/weather/hourbyhour/l/8ad7e52f0179c9dac1ecc7dd62795baa4a4cfe725b2df668a21696f312f8bef0',
 };
 
+// ── HTML ESCAPING ────────────────────────────────────────────────────────────
+// All strings that come from external APIs (team names, game states, venue
+// names, error messages) must pass through esc() before being interpolated
+// into innerHTML template literals.
+function esc(v){
+  return String(v ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 // ── COLOR RULES ──────────────────────────────────────────────────────────────
 function colTemp(t){if(t>=95||t<=40)return'col-red';if(t>=85)return'col-yellow';return'col-green';}
 function colHumid(h){if(h<50)return'col-red';if(h<=60)return'col-yellow';if(h<=70)return'col-dull';return'col-green';}
@@ -1152,16 +1252,30 @@ function colPressure(p){if(p>1020)return'col-red';if(p>=1015)return'col-yellow';
 function colWind(s){if(s<=5.9)return'col-red';if(s<=12.9)return'col-yellow';if(s<=19.9)return'col-dull';return'col-green';}
 function colGusts(g){if(g<=10.9)return'col-red';if(g<=18.9)return'col-yellow';if(g<=25)return'col-dull';return'col-green';}
 function colPrecip(p){if(p<20)return'col-green';if(p<40)return'col-yellow';return'col-red';}
-function tCol(t){return t>=95||t<=40?'col-red':t>=85?'col-yellow':'col-green';}
-function wColRow(s){return s<=5.9?'col-red':s<=12.9?'col-yellow':s<=19.9?'col-dull':'col-green';}
-function pColRow(p){return p<20?'col-green':p<40?'col-yellow':'col-red';}
 
 const cardinal=d=>['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
 
 // ── EST OFFSET HELPER ────────────────────────────────────────────────────────
+// DST-aware: computed from IANA timezones instead of a hardcoded map. The old
+// map had MST:-2, but Arizona doesn't observe DST — during the MLB season
+// Phoenix is 3 hours behind ET, so every ARI time was off by an hour.
+const TZ_IANA = {
+  'ET':'America/New_York','CT':'America/Chicago','MT':'America/Denver',
+  'MST':'America/Phoenix','PT':'America/Los_Angeles'
+};
 function getEstOffset(tz){
-  const map = {'ET':0,'CT':-1,'MT':-2,'PT':-3,'MST':-2};
-  return map[tz] !== undefined ? map[tz] : 0;
+  const iana = TZ_IANA[tz] || TZ_IANA['ET'];
+  const now = new Date();
+  const minutesIn = z => {
+    const parts = new Intl.DateTimeFormat('en-US',{timeZone:z,hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(now);
+    const h = +parts.find(p=>p.type==='hour').value;
+    const m = +parts.find(p=>p.type==='minute').value;
+    return h*60+m;
+  };
+  let diff = minutesIn(iana) - minutesIn(TZ_IANA['ET']);
+  if(diff > 720) diff -= 1440;
+  if(diff < -720) diff += 1440;
+  return Math.round(diff/60);
 }
 
 // ── LAZY FETCH ───────────────────────────────────────────────────────────────
@@ -1176,14 +1290,15 @@ async function fetchTeamData(abbr, force=false){
   if(!force && allData[abbr] && !allData[abbr].err) return;
   const team=TEAMS.find(t=>t.abbr===abbr);
   if(!team) return;
-  // Cache-bust with timestamp so browser never serves a stale response
-  const bust=Date.now();
+  // No cache-busting: Open-Meteo forecasts update roughly hourly, so normal
+  // browser caching is fine (faster + kinder to a free API). A manual Refresh
+  // (force=true) uses cache:'reload' to guarantee a fresh response.
   const url=`https://api.open-meteo.com/v1/forecast?latitude=${team.lat}&longitude=${team.lon}`
   +`&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,`
   +`wind_direction_10m,wind_gusts_10m,apparent_temperature,precipitation_probability,precipitation`
-  +`&timezone=auto&forecast_days=1&wind_speed_unit=mph&temperature_unit=fahrenheit&_=${bust}`;
+  +`&timezone=auto&forecast_days=1&wind_speed_unit=mph&temperature_unit=fahrenheit`;
   try{
-  const json=await fetch(url, {cache:'no-store'}).then(r=>r.json());
+  const json=await fetch(url, force?{cache:'reload'}:{}).then(r=>r.json());
   const h=json.hourly; const hours=[]; let added=0;
   for(let i=0;i<h.time.length && added<14;i++){
   // Parse hour directly from the ISO string (e.g. "2026-04-19T19:00") so we
@@ -1380,9 +1495,8 @@ function buildExpandPanel(abbr){
   <div class="time-entry">
   <label>⏱ Game Time</label>
   <input class="time-input" id="ti-${abbr}" type="text" placeholder="7:05 PM" value="${gt}"
-  onkeydown="if(event.key==='Enter')setTime('${abbr}')"
-  oninput="liveUpdate('${abbr}')"/>
-  ${gt?`<button class="clear-btn" onclick="clearTime('${abbr}')">Clear</button>`:''}
+  data-abbr="${abbr}" aria-label="Game time for ${abbr}"/>
+  ${gt?`<button class="clear-btn" type="button" data-abbr="${abbr}">Clear</button>`:''}
   <span class="time-hint">e.g. 7:05 PM · 1:10 PM · 13:10</span>
   <span class="tz-note">⚠️ Enter time in the <strong>home team's local timezone</strong> — ${tz} (${offsetText})</span>
   </div>
@@ -1421,13 +1535,13 @@ function renderTable(){
   const gt=gameTimes[t.abbr];
   const isOpen=openTeam===t.abbr;
   const badge=`<span class="team-badge" style="background:${t.color}">${t.abbr}</span>`;
-  const tempStr=now?`<span class="summary-temp ${tCol(now.temp)}">${now.temp}°F</span>`:'<span style="color:var(--muted)">—</span>';
-  const windStr=now?`<span style="font-weight:600" class="${wColRow(now.wSpeed)}">${now.wSpeed} mph ${now.wCard}</span>`:'—';
-  const precipStr=now?`<span style="font-weight:600" class="${pColRow(now.pPct)}">${now.pPct}%</span>`:'—';
+  const tempStr=now?`<span class="summary-temp ${colTemp(now.temp)}">${now.temp}°F</span>`:'<span style="color:var(--muted)">—</span>';
+  const windStr=now?`<span style="font-weight:600" class="${colWind(now.wSpeed)}">${now.wSpeed} mph ${now.wCard}</span>`:'—';
+  const precipStr=now?`<span style="font-weight:600" class="${colPrecip(now.pPct)}">${now.pPct}%</span>`:'—';
   const gtStr=gt?`<span class="has-game">⚾ ${gt.toUpperCase()}</span>`:`<span class="no-game">no game set</span>`;
-  const coordStr=`<a class="coord-link" href="https://www.google.com/maps?q=${t.lat},${t.lon}" target="_blank" onclick="event.stopPropagation()">${t.lat}, ${t.lon}</a>`;
+  const coordStr=`<a class="coord-link" href="https://www.google.com/maps?q=${t.lat},${t.lon}" target="_blank" rel="noopener">${t.lat}, ${t.lon}</a>`;
   const wxUrl=WEATHER_LINKS[t.abbr]||null;
-  const wxStr=wxUrl?`<a class="wx2-link" href="${wxUrl}" target="_blank" onclick="event.stopPropagation()" data-tip="Weather.com Hourly · ${t.stadium}">
+  const wxStr=wxUrl?`<a class="wx2-link" href="${wxUrl}" target="_blank" rel="noopener" data-tip="Weather.com Hourly · ${t.stadium}" aria-label="Weather.com hourly forecast for ${t.stadium}">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M17.5 19a4.5 4.5 0 0 0 0-9h-.5A7 7 0 1 0 6 17.5"/>
       <path d="M9 19v1M12 16v3M15 19v1"/>
@@ -1442,7 +1556,7 @@ function renderTable(){
     roofBadge=`<span class="stadium-type open-air">🏟️ Open Air</span>`;
   }
   return `
-  <tr class="team-row${isOpen?' open':''}" id="tr-${t.abbr}" style="animation-delay:${idx*.02}s" onclick="toggleTeam('${t.abbr}')">
+  <tr class="team-row${isOpen?' open':''}" id="tr-${t.abbr}" style="animation-delay:${idx*.02}s" data-abbr="${t.abbr}" tabindex="0" role="button" aria-expanded="${isOpen?'true':'false'}" aria-label="Toggle ${t.stadium} forecast">
   <td>${badge}</td>
   <td><div class="stadium-name">${t.stadium}</div><div class="stadium-div">${t.division}</div><div>${roofBadge}</div></td>
   <td>${gtStr}</td><td>${tempStr}</td><td>${windStr}</td><td>${precipStr}</td>
@@ -1694,7 +1808,9 @@ function switchTab(tab){
   document.getElementById('wind-view').style.display       = tab==='wind'?'block':'none';
   document.getElementById('legend-view').style.display     = tab==='legend'?'block':'none';
   ['weather','firstpitch','cheat','wind','legend'].forEach(t=>{
-    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
+    const btn=document.getElementById(`tab-${t}`);
+    btn.classList.toggle('active', t===tab);
+    btn.setAttribute('aria-selected', t===tab ? 'true' : 'false');
   });
   if(tab==='cheat') renderCheat();
   if(tab==='wind') renderWind();
@@ -1711,6 +1827,7 @@ async function loadAll(){
   // Wipe all cached data immediately — old values gone
   allData={};
   fpCache={};
+  fpCacheTime={};
   gameTimes={};
 
   // Clear the table so stale rows don't show while loading
@@ -1772,15 +1889,9 @@ function fpGameTimeInfo(isoUtc, abbr){
   const teamInfo = TEAMS.find(t=>t.abbr===abbr);
   if(!teamInfo) return null;
 
-  const tzMap = {
-    'ET':  {iana:'America/New_York',  abbr:'ET'},
-    'CT':  {iana:'America/Chicago',   abbr:'CT'},
-    'MT':  {iana:'America/Denver',    abbr:'MT'},
-    'MST': {iana:'America/Phoenix',   abbr:'MST'},
-    'PT':  {iana:'America/Los_Angeles',abbr:'PT'},
-  };
-  const tzEntry = tzMap[teamInfo.tz] || tzMap['ET'];
-  const estEntry = tzMap['ET'];
+  // Reuses the shared TZ_IANA map (defined next to getEstOffset)
+  const tzEntry  = { iana: TZ_IANA[teamInfo.tz] || TZ_IANA['ET'], abbr: TZ_IANA[teamInfo.tz] ? teamInfo.tz : 'ET' };
+  const estEntry = { iana: TZ_IANA['ET'], abbr: 'ET' };
 
   try{
     const d = new Date(isoUtc);
@@ -1882,14 +1993,14 @@ function buildFPCard(game){
   const state = fpStateClass(status);
 
   const stadiumTeam = TEAMS.find(t=>t.abbr===homeAbbr);
-  const stadiumName = stadiumTeam ? stadiumTeam.stadium : (game.venue?.name||'');
+  const stadiumName = stadiumTeam ? stadiumTeam.stadium : esc(game.venue?.name||'');
 
   // Score block
   let scoreHTML = '';
   if((state==='live'||state==='final') && home.score!=null){
     const inningInfo = state==='live'
-      ? `<div class="fp-inning-tag">${status?.detailedState||'In Progress'}</div>`
-      : `<div class="fp-inning-tag" style="color:var(--muted)">${status?.detailedState||'Final'}</div>`;
+      ? `<div class="fp-inning-tag">${esc(status?.detailedState||'In Progress')}</div>`
+      : `<div class="fp-inning-tag" style="color:var(--muted)">${esc(status?.detailedState||'Final')}</div>`;
     scoreHTML = `<div class="fp-score-block">
       <div class="fp-score-team"><div class="fp-score-abbr" style="color:${awayColor}">${awayAbbr}</div><div class="fp-score-num">${away.score??'—'}</div></div>
       <div class="fp-score-dash">-</div>
@@ -1899,8 +2010,8 @@ function buildFPCard(game){
 
   // Alert banner
   let alertBanner = '';
-  if(state==='postponed') alertBanner=`<div class="fp-postponed-banner">⚠️ ${status?.detailedState||'Postponed'}</div>`;
-  else if(state==='cancelled') alertBanner=`<div class="fp-cancelled-banner">🚫 ${status?.detailedState||'Cancelled'}</div>`;
+  if(state==='postponed') alertBanner=`<div class="fp-postponed-banner">⚠️ ${esc(status?.detailedState||'Postponed')}</div>`;
+  else if(state==='cancelled') alertBanner=`<div class="fp-cancelled-banner">🚫 ${esc(status?.detailedState||'Cancelled')}</div>`;
 
   // Time info: local tz + EST equivalent
   const timeInfo = fpGameTimeInfo(game.gameDate, homeAbbr);
@@ -1920,15 +2031,15 @@ function buildFPCard(game){
       </div>
       ${fpStateBadgeHTML(status)}
     </div>
-    <div class="fp-card-home">${home.team.name}</div>
-    <div class="fp-card-away">vs <strong>${away.team.name}</strong></div>
+    <div class="fp-card-home">${esc(home.team.name)}</div>
+    <div class="fp-card-away">vs <strong>${esc(away.team.name)}</strong></div>
     <div class="fp-card-divider"></div>
     ${alertBanner}
     ${(state==='pre'||state==='live')?`<div class="fp-info-row"><span class="fp-info-l">⏰ First Pitch</span><span class="fp-info-v accent fp-pitch-time">${pitchTimeLine}</span></div>`:''}
     ${scoreHTML}
     <div class="fp-info-row" style="margin-top:6px">
       <span class="fp-info-l">📅 Date</span>
-      <span class="fp-info-v">${game.officialDate||game.gameDate?.slice(0,10)||'—'}</span>
+      <span class="fp-info-v">${esc(game.officialDate||game.gameDate?.slice(0,10)||'—')}</span>
     </div>
     <div class="fp-stadium">🏟 ${stadiumName}</div>
     ${weatherHTML}
@@ -1961,9 +2072,47 @@ function refreshFPCardsForTeam(abbr){
 }
 
 let fpCache = {};
+let fpCacheTime = {};
 let fpLoading = false;
 
-async function renderFirstPitch(){
+// Live scores go stale fast — cached schedules expire after this long
+const FP_CACHE_TTL_MS = 60 * 1000;
+
+// CORS proxy fallbacks, tried in order when the direct MLB fetch fails.
+// These are free community services and can be flaky — for reliability,
+// deploy a tiny Cloudflare Worker that proxies statsapi.mlb.com and put
+// its URL first in this list. `wrap:true` means the proxy returns
+// {contents: "..."} instead of the raw body (allorigins format).
+const FP_PROXIES = [
+  { build: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, wrap: true },
+  { build: u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,          wrap: false },
+];
+
+async function fetchFPSchedule(mlbUrl){
+  try{
+    const direct = await fetch(mlbUrl, {mode:'cors'});
+    if(!direct.ok) throw new Error('direct failed');
+    return await direct.json();
+  }catch(_){ /* fall through to proxies */ }
+
+  let lastErr = new Error('All proxies failed');
+  for(const proxy of FP_PROXIES){
+    try{
+      const res = await fetch(proxy.build(mlbUrl));
+      if(!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
+      if(proxy.wrap){
+        const wrapper = await res.json();
+        return JSON.parse(wrapper.contents);
+      }
+      return await res.json();
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+
+// force=true (Refresh button) bypasses the cache; otherwise cached schedules
+// are reused for FP_CACHE_TTL_MS so tab-switching stays instant.
+async function renderFirstPitch(force=false){
   if(fpLoading) return;
   const dateInput = document.getElementById('fp-date');
   if(!dateInput.value) dateInput.value = fpTodayStr();
@@ -1972,35 +2121,26 @@ async function renderFirstPitch(){
   const grid = document.getElementById('fp-grid');
   const statusEl = document.getElementById('fp-status');
 
-  if(fpCache[date]){
+  const fresh = fpCache[date] && (Date.now() - (fpCacheTime[date]||0) < FP_CACHE_TTL_MS);
+  if(!force && fresh){
     renderFPGames(fpCache[date]);
     return;
   }
 
-  grid.innerHTML = `<div class="fp-loading"><div class="fp-loading-ring"></div><div class="fp-loading-text">Fetching ${date} schedule…</div></div>`;
+  grid.innerHTML = `<div class="fp-loading"><div class="fp-loading-ring"></div><div class="fp-loading-text">Fetching ${esc(date)} schedule…</div></div>`;
   statusEl.textContent = 'Loading…';
   fpLoading = true;
 
   try{
     const mlbUrl = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore,team`;
-    let data;
-    try{
-      const direct = await fetch(mlbUrl, {mode:'cors'});
-      if(!direct.ok) throw new Error('direct failed');
-      data = await direct.json();
-    }catch(_){
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(mlbUrl)}`;
-      const proxyRes = await fetch(proxyUrl);
-      if(!proxyRes.ok) throw new Error(`Proxy HTTP ${proxyRes.status}`);
-      const wrapper = await proxyRes.json();
-      data = JSON.parse(wrapper.contents);
-    }
+    const data = await fetchFPSchedule(mlbUrl);
     const games = [];
     (data.dates||[]).forEach(d=>(d.games||[]).forEach(g=>games.push(g)));
     fpCache[date] = games;
+    fpCacheTime[date] = Date.now();
     renderFPGames(games);
   }catch(e){
-    grid.innerHTML = `<div class="fp-no-games">⚠️ Failed to load schedule<span>${e.message}</span></div>`;
+    grid.innerHTML = `<div class="fp-no-games">⚠️ Failed to load schedule<span>${esc(e.message)}</span></div>`;
     statusEl.textContent = 'Error';
   }finally{
     fpLoading = false;
@@ -2012,10 +2152,10 @@ async function renderFPGames(allGames){
   const statusEl = document.getElementById('fp-status');
   const sorted = allGames.slice().sort((a,b)=>new Date(a.gameDate)-new Date(b.gameDate));
 
-  statusEl.textContent = `${sorted.length} home game${sorted.length!==1?'s':''} · ${document.getElementById('fp-date').value}`;
+  statusEl.textContent = `${sorted.length} game${sorted.length!==1?'s':''} · ${document.getElementById('fp-date').value}`;
 
   if(!sorted.length){
-    grid.innerHTML = `<div class="fp-no-games">No home games found<span>Try a different date — check back on game days</span></div>`;
+    grid.innerHTML = `<div class="fp-no-games">No games found<span>Try a different date — check back on game days</span></div>`;
     return;
   }
 
@@ -2031,12 +2171,66 @@ async function renderFPGames(allGames){
 }
 
 // ── STARTUP ──────────────────────────────────────────────────────────────────
+// All handlers are wired here via addEventListener (no inline on* attributes).
+// Rows, time inputs, and Clear buttons are re-rendered constantly, so they use
+// event delegation on #tbody instead of per-element listeners.
+function wireEvents(){
+  // Tabs
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
+  });
+
+  // Header refresh
+  document.getElementById('refresh-btn')?.addEventListener('click', loadAll);
+
+  // Dashboard controls
+  document.getElementById('search')?.addEventListener('input', renderTable);
+  document.getElementById('div-filter')?.addEventListener('change', renderTable);
+  document.getElementById('sort')?.addEventListener('change', renderTable);
+
+  // First Pitch controls — the Refresh button forces a cache bypass
+  document.getElementById('fp-date')?.addEventListener('change', ()=>renderFirstPitch());
+  document.getElementById('fp-refresh-btn')?.addEventListener('click', ()=>renderFirstPitch(true));
+
+  // Cheat sheet searches
+  document.getElementById('cheat-search')?.addEventListener('input', renderCheat);
+  document.getElementById('wind-search')?.addEventListener('input', renderWind);
+
+  // Table delegation: row toggle (click + keyboard), Clear buttons.
+  // Clicks on links inside a row (coords, weather.com) must NOT toggle it.
+  const tbody = document.getElementById('tbody');
+  if(tbody){
+    tbody.addEventListener('click', e=>{
+      if(e.target.closest('a')) return;
+      const clearBtn = e.target.closest('.clear-btn');
+      if(clearBtn){ clearTime(clearBtn.dataset.abbr); return; }
+      if(e.target.closest('.expand-panel')) return; // don't toggle from inside the panel
+      const row = e.target.closest('tr.team-row');
+      if(row) toggleTeam(row.dataset.abbr);
+    });
+    tbody.addEventListener('keydown', e=>{
+      if(e.target.classList?.contains('time-input')){
+        if(e.key==='Enter') setTime(e.target.dataset.abbr);
+        return;
+      }
+      if((e.key==='Enter'||e.key===' ') && e.target.classList?.contains('team-row')){
+        e.preventDefault();
+        toggleTeam(e.target.dataset.abbr);
+      }
+    });
+    tbody.addEventListener('input', e=>{
+      if(e.target.classList?.contains('time-input')) liveUpdate(e.target.dataset.abbr);
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('overlay');
   if(overlay) overlay.classList.add('gone');
   // Set default date for First Pitch tab
   const fpDate = document.getElementById('fp-date');
   if(fpDate) fpDate.value = fpTodayStr();
+  wireEvents();
   renderTable();
 });
 </script>
