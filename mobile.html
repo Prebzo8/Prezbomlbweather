@@ -577,6 +577,12 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .wwc-level.lvl-pitcher-strong{color:var(--c-red);background:rgba(255,69,69,0.1);}
 .wwc-downgraded{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px;opacity:0.8;}
 
+/* In/out push badge: is the wind blowing out to the outfield or in toward home plate? */
+.push-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-radius:3px;padding:2px 7px;margin-top:4px;white-space:nowrap;}
+.push-out{color:var(--c-green);background:rgba(48,217,138,0.12);border:1px solid rgba(48,217,138,0.3);}
+.push-in{color:var(--c-red);background:rgba(255,69,69,0.12);border:1px solid rgba(255,69,69,0.3);}
+.push-cross{color:var(--muted);background:rgba(74,96,128,0.12);border:1px solid var(--border2);}
+
 /* ── WIND CHEAT SHEET TAB ── */
 #wind-view{display:none;padding:24px 32px;}
 .wind-table-wrap{overflow-x:auto;}
@@ -1401,6 +1407,7 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
   <div class="wc-stat"><span class="wc-stat-l">Gusts</span><div style="text-align:right"><div class="wc-stat-v ${colGusts(h.gusts)}">${h.gusts} mph</div></div></div>
   <div class="wc-stat"><span class="wc-stat-l">Rain %</span><div style="text-align:right"><div class="wc-stat-v ${colPrecip(h.pPct)}">${h.pPct}%</div><div class="wc-stat-sub">${h.pIn}" precip</div></div></div>
   ${windImpactLine(entry, h.wSpeed)}
+  ${pushBadgeHTML(abbr, h.wCard)}
 
   ${roofHTML}
 
@@ -1607,6 +1614,25 @@ function windLevelEmoji(level){
   return '⚪';
 }
 
+// Geometric push: is this wind blowing out to the outfield or in toward home
+// plate at this park? Derived from the park's true CF bearing; null for domes.
+const DIR_TO_DEG={'N':0,'North':0,'NE':45,'Northeast':45,'E':90,'East':90,'SE':135,'Southeast':135,'S':180,'South':180,'SW':225,'Southwest':225,'W':270,'West':270,'NW':315,'Northwest':315};
+function windPush(team, windFrom){
+  const t=TEAMS.find(x=>x.abbr===team);
+  if(!t || t.roofType==='dome') return null;
+  const cf=PARK_CF_BEARING[team];
+  const from=DIR_TO_DEG[windFrom];
+  if(cf===undefined || from===undefined) return null;
+  const comp=Math.cos((((from+180-cf+540)%360)-180)*Math.PI/180);
+  if(comp>=0.25) return {dir:'out', arrow:'⬆', label:'Blowing OUT — toward outfield', cls:'push-out'};
+  if(comp<=-0.25) return {dir:'in', arrow:'⬇', label:'Blowing IN — toward home plate', cls:'push-in'};
+  return {dir:'cross', arrow:'↔', label:'Crosswind — across the field', cls:'push-cross'};
+}
+function pushBadgeHTML(team, windFrom){
+  const p=windPush(team, windFrom);
+  return p?`<span class="push-badge ${p.cls}">${p.arrow} ${p.label}</span>`:'';
+}
+
 // Speed thresholds match the Color Legend sheet:
 // ≤5.9 mph = red (Calm/No Carry) → direction irrelevant
 // 6–12.9 mph = yellow (Light) → cap at Mildly
@@ -1685,6 +1711,7 @@ function buildWindWindowCard(abbr, offsetMins, label, isGame){
   return `<div class="wind-window-card ${gc}">
   <div class="wwc-dir" style="color:var(--blue)">${h.wCard} ${h.wSpeed}mph</div>
   <div class="wwc-blows">${entry?entry.blowsTo:'—'}</div>
+  ${pushBadgeHTML(abbr, h.wCard)}
   <div class="wwc-impact">${entry?entry.impact:'No wind data'}</div>
   ${windImpactLine(entry, h.wSpeed, {small:true})}
   </div>`;
@@ -1722,7 +1749,7 @@ function renderWind(){
   <td>${i===0?badge:''}</td>
   <td>${i===0?`<div class="stadium-name" style="font-size:13px">${t.stadium}</div>`:''}</td>
   <td><span class="wind-dir-badge">${w.windFrom}</span></td>
-  <td><div class="wind-blows-to">${w.blowsTo}</div></td>
+  <td><div class="wind-blows-to">${w.blowsTo}</div>${pushBadgeHTML(t.abbr, w.windFrom)}</td>
   <td class="wind-impact-cell">${w.impact}</td>
   <td><span class="wwc-level ${lvlClass}">${emoji} ${w.level}</span></td>
   </tr>`);
@@ -1907,6 +1934,7 @@ function buildFPWeatherWindow(abbr, gameTimeStr, timeDisplayLine){
     <div class="fp-wx-stat"><span class="fp-wx-stat-l">🌧 Rain %</span><span class="fp-wx-stat-v ${colPrecip(h.pPct)}">${h.pPct}%</span></div>
     <div class="fp-wx-stat"><span class="fp-wx-stat-l">🔵 Pressure</span><span class="fp-wx-stat-v ${colPressure(h.pressure)}">${h.pressure} hPa</span></div>
     ${windImpactHTML}
+    ${pushBadgeHTML(abbr, h.wCard)}
     ${roofHTML}
   </div>`;
 }
