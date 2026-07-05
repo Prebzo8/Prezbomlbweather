@@ -1105,6 +1105,16 @@ const WIND_DIR_NAMES=['North','Northeast','East','Southeast','South','Southwest'
 // Build the 8 direction rows for a park from its true CF bearing: wind from
 // direction D blows toward D+180, and its effect follows from that angle
 // relative to the park's actual center-field line.
+// Which slice of the outfield a signed offset points at (5 sectors LF→RF).
+function outfieldSector(off){
+  if(off>27) return 'RF';
+  if(off>9) return 'CF/RF';
+  if(off>=-9) return 'CF';
+  if(off>=-27) return 'LF/CF';
+  return 'LF';
+}
+const SECTOR_LONG={'CF':'center field','LF/CF':'left-center field','CF/RF':'right-center field','LF':'left field','RF':'right field'};
+
 function windRowsFor(team){
   const cf=PARK_CF_BEARING[team];
   return WIND_DIR_NAMES.map((windFrom,i)=>{
@@ -1112,15 +1122,16 @@ function windRowsFor(team){
     const s=((blow-cf+540)%360)-180;              // signed offset: + = right-field side
     const comp=Math.cos(Math.abs(s)*Math.PI/180); // +1 straight out, -1 straight in
     const blowName=WIND_DIR_NAMES[(i+4)%8].toLowerCase();
-    const side=s>0?'right field':'left field';
+    const sector=outfieldSector(s);
+    const inSector=outfieldSector(s>0?s-180:s+180);
     let blowsTo,impact,level;
-    if(comp>=0.85){blowsTo=blowName+' toward CF';impact='Direct tailwind out to center field. Maximum carry — the best home run wind at this park.';level='Very Strongly Hitter-Friendly';}
-    else if(comp>=0.5){blowsTo=blowName+' toward '+(s>0?'RF':'LF');impact='Tailwind out toward '+side+'. Strong boost to fly ball carry.';level='Strongly Hitter-Friendly';}
-    else if(comp>=0.2){blowsTo=blowName+' toward '+(s>0?'RF':'LF');impact='Partial tailwind angled toward '+side+'. Moderate extra carry.';level='Hitter-Friendly';}
-    else if(comp>-0.2){blowsTo=blowName+' across the field';impact=(s>0?'Left-to-right':'Right-to-left')+' crosswind. Little net in/out effect on carry.';level='Neutral — Crosswind';}
-    else if(comp>-0.5){blowsTo=blowName+' toward home plate';impact='Partial headwind with a cross component. Modestly suppresses fly balls.';level='Pitcher-Friendly';}
-    else if(comp>-0.85){blowsTo=blowName+' toward home plate';impact='Headwind blowing in across the outfield. Strongly suppresses fly ball carry.';level='Strongly Pitcher-Friendly';}
-    else {blowsTo=blowName+' toward home plate';impact='Direct headwind in from center field. Maximum fly ball suppression.';level='Very Strongly Pitcher-Friendly';}
+    if(comp>=0.85){blowsTo=blowName+' — OUT to '+sector;impact='Direct tailwind out to '+SECTOR_LONG[sector]+'. Maximum carry — the best home run wind at this park.';level='Very Strongly Hitter-Friendly';}
+    else if(comp>=0.5){blowsTo=blowName+' — OUT to '+sector;impact='Tailwind out to '+SECTOR_LONG[sector]+'. Strong boost to fly ball carry.';level='Strongly Hitter-Friendly';}
+    else if(comp>=0.2){blowsTo=blowName+' — OUT to '+sector;impact='Partial tailwind angled toward '+SECTOR_LONG[sector]+'. Moderate extra carry.';level='Hitter-Friendly';}
+    else if(comp>-0.2){blowsTo=blowName+' — across the field';impact=(s>0?'Left-to-right':'Right-to-left')+' crosswind. Little net in/out effect on carry.';level='Neutral — Crosswind';}
+    else if(comp>-0.5){blowsTo=blowName+' — IN from '+inSector+' to home plate';impact='Partial headwind blowing in over '+SECTOR_LONG[inSector]+'. Modestly suppresses fly balls.';level='Pitcher-Friendly';}
+    else if(comp>-0.85){blowsTo=blowName+' — IN from '+inSector+' to home plate';impact='Headwind blowing in over '+SECTOR_LONG[inSector]+'. Strongly suppresses fly ball carry.';level='Strongly Pitcher-Friendly';}
+    else {blowsTo=blowName+' — IN from '+inSector+' to home plate';impact='Direct headwind blowing in from '+SECTOR_LONG[inSector]+'. Maximum fly ball suppression.';level='Very Strongly Pitcher-Friendly';}
     return {team,windFrom,blowsTo,impact,level};
   });
 }
@@ -1623,10 +1634,11 @@ function windPush(team, windFrom){
   const cf=PARK_CF_BEARING[team];
   const from=DIR_TO_DEG[windFrom];
   if(cf===undefined || from===undefined) return null;
-  const comp=Math.cos((((from+180-cf+540)%360)-180)*Math.PI/180);
-  if(comp>=0.25) return {dir:'out', arrow:'⬆', label:'Blowing OUT — toward outfield', cls:'push-out'};
-  if(comp<=-0.25) return {dir:'in', arrow:'⬇', label:'Blowing IN — toward home plate', cls:'push-in'};
-  return {dir:'cross', arrow:'↔', label:'Crosswind — across the field', cls:'push-cross'};
+  const s=((from+180-cf+540)%360)-180;
+  const comp=Math.cos(Math.abs(s)*Math.PI/180);
+  if(comp>=0.25){const sec=outfieldSector(s); return {dir:'out', sector:sec, arrow:'⬆', label:'Blowing OUT → '+sec, cls:'push-out'};}
+  if(comp<=-0.25){const sec=outfieldSector(s>0?s-180:s+180); return {dir:'in', sector:sec, arrow:'⬇', label:'Blowing IN from '+sec+' → home plate', cls:'push-in'};}
+  return {dir:'cross', sector:null, arrow:'↔', label:'Crosswind — across the field', cls:'push-cross'};
 }
 function pushBadgeHTML(team, windFrom){
   const p=windPush(team, windFrom);
