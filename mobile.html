@@ -577,6 +577,12 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .wwc-level.lvl-pitcher-strong{color:var(--c-red);background:rgba(255,69,69,0.1);}
 .wwc-downgraded{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:3px;opacity:0.8;}
 
+/* In/out push badge: is the wind blowing out to the outfield or in toward home plate? */
+.push-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-radius:3px;padding:2px 7px;margin-top:4px;white-space:nowrap;}
+.push-out{color:var(--c-green);background:rgba(48,217,138,0.12);border:1px solid rgba(48,217,138,0.3);}
+.push-in{color:var(--c-red);background:rgba(255,69,69,0.12);border:1px solid rgba(255,69,69,0.3);}
+.push-cross{color:var(--muted);background:rgba(74,96,128,0.12);border:1px solid var(--border2);}
+
 /* ── WIND CHEAT SHEET TAB ── */
 #wind-view{display:none;padding:24px 32px;}
 .wind-table-wrap{overflow-x:auto;}
@@ -1099,6 +1105,16 @@ const WIND_DIR_NAMES=['North','Northeast','East','Southeast','South','Southwest'
 // Build the 8 direction rows for a park from its true CF bearing: wind from
 // direction D blows toward D+180, and its effect follows from that angle
 // relative to the park's actual center-field line.
+// Which slice of the outfield a signed offset points at (5 sectors LF→RF).
+function outfieldSector(off){
+  if(off>27) return 'RF';
+  if(off>9) return 'CF/RF';
+  if(off>=-9) return 'CF';
+  if(off>=-27) return 'LF/CF';
+  return 'LF';
+}
+const SECTOR_LONG={'CF':'center field','LF/CF':'left-center field','CF/RF':'right-center field','LF':'left field','RF':'right field'};
+
 function windRowsFor(team){
   const cf=PARK_CF_BEARING[team];
   return WIND_DIR_NAMES.map((windFrom,i)=>{
@@ -1106,15 +1122,16 @@ function windRowsFor(team){
     const s=((blow-cf+540)%360)-180;              // signed offset: + = right-field side
     const comp=Math.cos(Math.abs(s)*Math.PI/180); // +1 straight out, -1 straight in
     const blowName=WIND_DIR_NAMES[(i+4)%8].toLowerCase();
-    const side=s>0?'right field':'left field';
+    const sector=outfieldSector(s);
+    const inSector=outfieldSector(s>0?s-180:s+180);
     let blowsTo,impact,level;
-    if(comp>=0.85){blowsTo=blowName+' toward CF';impact='Direct tailwind out to center field. Maximum carry — the best home run wind at this park.';level='Very Strongly Hitter-Friendly';}
-    else if(comp>=0.5){blowsTo=blowName+' toward '+(s>0?'RF':'LF');impact='Tailwind out toward '+side+'. Strong boost to fly ball carry.';level='Strongly Hitter-Friendly';}
-    else if(comp>=0.2){blowsTo=blowName+' toward '+(s>0?'RF':'LF');impact='Partial tailwind angled toward '+side+'. Moderate extra carry.';level='Hitter-Friendly';}
-    else if(comp>-0.2){blowsTo=blowName+' across the field';impact=(s>0?'Left-to-right':'Right-to-left')+' crosswind. Little net in/out effect on carry.';level='Neutral — Crosswind';}
-    else if(comp>-0.5){blowsTo=blowName+' toward home plate';impact='Partial headwind with a cross component. Modestly suppresses fly balls.';level='Pitcher-Friendly';}
-    else if(comp>-0.85){blowsTo=blowName+' toward home plate';impact='Headwind blowing in across the outfield. Strongly suppresses fly ball carry.';level='Strongly Pitcher-Friendly';}
-    else {blowsTo=blowName+' toward home plate';impact='Direct headwind in from center field. Maximum fly ball suppression.';level='Very Strongly Pitcher-Friendly';}
+    if(comp>=0.85){blowsTo=blowName+' — OUT to '+sector;impact='Direct tailwind out to '+SECTOR_LONG[sector]+'. Maximum carry — the best home run wind at this park.';level='Very Strongly Hitter-Friendly';}
+    else if(comp>=0.5){blowsTo=blowName+' — OUT to '+sector;impact='Tailwind out to '+SECTOR_LONG[sector]+'. Strong boost to fly ball carry.';level='Strongly Hitter-Friendly';}
+    else if(comp>=0.2){blowsTo=blowName+' — OUT to '+sector;impact='Partial tailwind angled toward '+SECTOR_LONG[sector]+'. Moderate extra carry.';level='Hitter-Friendly';}
+    else if(comp>-0.2){blowsTo=blowName+' — across the field';impact=(s>0?'Left-to-right':'Right-to-left')+' crosswind. Little net in/out effect on carry.';level='Neutral — Crosswind';}
+    else if(comp>-0.5){blowsTo=blowName+' — IN from '+inSector+' to home plate';impact='Partial headwind blowing in over '+SECTOR_LONG[inSector]+'. Modestly suppresses fly balls.';level='Pitcher-Friendly';}
+    else if(comp>-0.85){blowsTo=blowName+' — IN from '+inSector+' to home plate';impact='Headwind blowing in over '+SECTOR_LONG[inSector]+'. Strongly suppresses fly ball carry.';level='Strongly Pitcher-Friendly';}
+    else {blowsTo=blowName+' — IN from '+inSector+' to home plate';impact='Direct headwind blowing in from '+SECTOR_LONG[inSector]+'. Maximum fly ball suppression.';level='Very Strongly Pitcher-Friendly';}
     return {team,windFrom,blowsTo,impact,level};
   });
 }
@@ -1401,6 +1418,7 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
   <div class="wc-stat"><span class="wc-stat-l">Gusts</span><div style="text-align:right"><div class="wc-stat-v ${colGusts(h.gusts)}">${h.gusts} mph</div></div></div>
   <div class="wc-stat"><span class="wc-stat-l">Rain %</span><div style="text-align:right"><div class="wc-stat-v ${colPrecip(h.pPct)}">${h.pPct}%</div><div class="wc-stat-sub">${h.pIn}" precip</div></div></div>
   ${windImpactLine(entry, h.wSpeed)}
+  ${pushBadgeHTML(abbr, h.wCard)}
 
   ${roofHTML}
 
@@ -1607,6 +1625,26 @@ function windLevelEmoji(level){
   return '⚪';
 }
 
+// Geometric push: is this wind blowing out to the outfield or in toward home
+// plate at this park? Derived from the park's true CF bearing; null for domes.
+const DIR_TO_DEG={'N':0,'North':0,'NE':45,'Northeast':45,'E':90,'East':90,'SE':135,'Southeast':135,'S':180,'South':180,'SW':225,'Southwest':225,'W':270,'West':270,'NW':315,'Northwest':315};
+function windPush(team, windFrom){
+  const t=TEAMS.find(x=>x.abbr===team);
+  if(!t || t.roofType==='dome') return null;
+  const cf=PARK_CF_BEARING[team];
+  const from=DIR_TO_DEG[windFrom];
+  if(cf===undefined || from===undefined) return null;
+  const s=((from+180-cf+540)%360)-180;
+  const comp=Math.cos(Math.abs(s)*Math.PI/180);
+  if(comp>=0.25){const sec=outfieldSector(s); return {dir:'out', sector:sec, arrow:'⬆', label:'Blowing OUT → '+sec, cls:'push-out'};}
+  if(comp<=-0.25){const sec=outfieldSector(s>0?s-180:s+180); return {dir:'in', sector:sec, arrow:'⬇', label:'Blowing IN from '+sec+' → home plate', cls:'push-in'};}
+  return {dir:'cross', sector:null, arrow:'↔', label:'Crosswind — across the field', cls:'push-cross'};
+}
+function pushBadgeHTML(team, windFrom){
+  const p=windPush(team, windFrom);
+  return p?`<span class="push-badge ${p.cls}">${p.arrow} ${p.label}</span>`:'';
+}
+
 // Speed thresholds match the Color Legend sheet:
 // ≤5.9 mph = red (Calm/No Carry) → direction irrelevant
 // 6–12.9 mph = yellow (Light) → cap at Mildly
@@ -1685,6 +1723,7 @@ function buildWindWindowCard(abbr, offsetMins, label, isGame){
   return `<div class="wind-window-card ${gc}">
   <div class="wwc-dir" style="color:var(--blue)">${h.wCard} ${h.wSpeed}mph</div>
   <div class="wwc-blows">${entry?entry.blowsTo:'—'}</div>
+  ${pushBadgeHTML(abbr, h.wCard)}
   <div class="wwc-impact">${entry?entry.impact:'No wind data'}</div>
   ${windImpactLine(entry, h.wSpeed, {small:true})}
   </div>`;
@@ -1722,7 +1761,7 @@ function renderWind(){
   <td>${i===0?badge:''}</td>
   <td>${i===0?`<div class="stadium-name" style="font-size:13px">${t.stadium}</div>`:''}</td>
   <td><span class="wind-dir-badge">${w.windFrom}</span></td>
-  <td><div class="wind-blows-to">${w.blowsTo}</div></td>
+  <td><div class="wind-blows-to">${w.blowsTo}</div>${pushBadgeHTML(t.abbr, w.windFrom)}</td>
   <td class="wind-impact-cell">${w.impact}</td>
   <td><span class="wwc-level ${lvlClass}">${emoji} ${w.level}</span></td>
   </tr>`);
@@ -1907,6 +1946,7 @@ function buildFPWeatherWindow(abbr, gameTimeStr, timeDisplayLine){
     <div class="fp-wx-stat"><span class="fp-wx-stat-l">🌧 Rain %</span><span class="fp-wx-stat-v ${colPrecip(h.pPct)}">${h.pPct}%</span></div>
     <div class="fp-wx-stat"><span class="fp-wx-stat-l">🔵 Pressure</span><span class="fp-wx-stat-v ${colPressure(h.pressure)}">${h.pressure} hPa</span></div>
     ${windImpactHTML}
+    ${pushBadgeHTML(abbr, h.wCard)}
     ${roofHTML}
   </div>`;
 }
