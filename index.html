@@ -12,6 +12,22 @@
 })();
 </script>
 <!-- ── END MOBILE REDIRECT ── -->
+<!-- ── COPY DETERRENTS (soft — a determined user can still view source) ── -->
+<script>
+(function(){
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    var blocked =
+      (e.key === 'F12') ||
+      ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) ||
+      ((e.ctrlKey || e.metaKey) && (k === 'u' || k === 's'));
+    if(blocked) e.preventDefault();
+  });
+})();
+</script>
+<!-- ── END COPY DETERRENTS ── -->
 <!-- ── GEO-BLOCK: NY/NJ only + VPN/Proxy ── -->
 <script>
 (function(){
@@ -77,10 +93,25 @@
 <!-- ── PASSWORD GATE ── -->
 <script>
 (function(){
-  // SHA-256 of the password, so the plaintext no longer appears in the page
+  // SHA-256 of the passwords, so the plaintext no longer appears in the page
   // source. Client-side gating is still only a soft deterrent.
-  var CORRECT_HASH = '6ecf763ff6e7cef7b47e6611e1bf76fe2608a2e32a97b2d88b083ae1d8d02c82';
+  var MASTER_HASH = '025ac3ddef52e0aaa62896954c6fe57948a7c144cb203610499a912b832fd473'; // 0214 - full access
+  var VIEW_HASH   = '6ecf763ff6e7cef7b47e6611e1bf76fe2608a2e32a97b2d88b083ae1d8d02c82'; // 1225 - view-only access
   var SESSION_KEY = 'pwg_unlocked';
+  var MODE_KEY    = 'pwg_mode';
+
+  // Injects the CSS that freezes every input/select/textarea on the page once
+  // view-only mode is active, regardless of when the app builds them.
+  (function injectViewModeCSS(){
+    var style = document.createElement('style');
+    style.textContent = 'html.pwg-view-mode input,html.pwg-view-mode textarea,' +
+      'html.pwg-view-mode select{pointer-events:none!important;}';
+    document.head.appendChild(style);
+  })();
+
+  function applyMode(mode){
+    if(mode === 'view') document.documentElement.classList.add('pwg-view-mode');
+  }
 
   // Minimal pure-JS SHA-256 (ASCII input) — works on file://, http, and https,
   // unlike crypto.subtle which browsers only expose in secure contexts.
@@ -144,8 +175,12 @@
     try{ return sessionStorage.getItem(SESSION_KEY) === '1'; }catch(e){ return false; }
   }
 
-  function unlock(){
-    try{ sessionStorage.setItem(SESSION_KEY, '1'); }catch(e){}
+  function unlock(mode){
+    try{
+      sessionStorage.setItem(SESSION_KEY, '1');
+      sessionStorage.setItem(MODE_KEY, mode);
+    }catch(e){}
+    applyMode(mode);
     var gate = document.getElementById('pwg-gate');
     if(gate){
       gate.style.opacity = '0';
@@ -205,9 +240,13 @@
       var err   = document.getElementById('pwg-err');
 
       function attempt(){
-        if(sha256(input.value) === CORRECT_HASH){
+        var hashed = sha256(input.value);
+        if(hashed === MASTER_HASH){
           err.textContent = '';
-          unlock();
+          unlock('master');
+        } else if(hashed === VIEW_HASH){
+          err.textContent = '';
+          unlock('view');
         } else {
           err.textContent = 'Incorrect password';
           input.value = '';
@@ -223,7 +262,13 @@
     });
   }
 
-  if(!alreadyUnlocked()) showGate();
+  if(alreadyUnlocked()){
+    var savedMode = null;
+    try{ savedMode = sessionStorage.getItem(MODE_KEY); }catch(e){}
+    applyMode(savedMode);
+  } else {
+    showGate();
+  }
 })();
 </script>
 <!-- ── END PASSWORD GATE ── -->
