@@ -28,6 +28,32 @@
 })();
 </script>
 <!-- ── END COPY DETERRENTS ── -->
+<!-- ── AUTOMATION / BOT BLOCK (soft — flags common automation signals;
+     a spoofed user-agent or non-JS fetch bypasses this entirely) ── -->
+<script>
+(function(){
+  var ua = (navigator.userAgent || '').toLowerCase();
+  var botPattern = /bot|crawl|spider|slurp|headless|gptbot|chatgpt|anthropic|claude|grok|perplexity|bytespider|diffbot|ccbot|semrush|ahrefs|mj12bot|dotbot|petalbot|facebookexternalhit|ia_archiver/;
+  var isAutomated = navigator.webdriver === true || botPattern.test(ua);
+  if(!isAutomated) return;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.body.innerHTML = [
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;',
+        'min-height:100vh;background:#080b10;color:#dce8f5;',
+        'font-family:\'Barlow Condensed\',\'Arial Narrow\',sans-serif;text-align:center;padding:32px;">',
+        '<div style="font-size:52px;margin-bottom:24px;">🤖🚫</div>',
+        '<div style="font-size:32px;font-weight:900;letter-spacing:3px;text-transform:uppercase;',
+          'color:#f0c040;margin-bottom:12px;">Access Restricted</div>',
+        '<div style="font-size:16px;color:#4a6080;max-width:480px;line-height:1.7;">',
+          'Automated access is not permitted on this site.',
+        '</div>',
+      '</div>'
+    ].join('');
+  });
+})();
+</script>
+<!-- ── END AUTOMATION / BOT BLOCK ── -->
 <!-- ── GEO-BLOCK: NY/NJ only + VPN/Proxy ── -->
 <script>
 (function(){
@@ -282,6 +308,7 @@
 <link rel="manifest" href="/site.webmanifest" />
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex, nofollow, noarchive, noimageindex, noai, noimageai"/>
 <title>MLB WEATHER HQ</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
