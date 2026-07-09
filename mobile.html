@@ -126,15 +126,8 @@
   var SESSION_KEY = 'pwg_unlocked';
   var MODE_KEY    = 'pwg_mode';
 
-  // Injects the CSS that freezes every input/select/textarea on the page once
-  // view-only mode is active, regardless of when the app builds them.
-  (function injectViewModeCSS(){
-    var style = document.createElement('style');
-    style.textContent = 'html.pwg-view-mode input,html.pwg-view-mode textarea,' +
-      'html.pwg-view-mode select{pointer-events:none!important;}';
-    document.head.appendChild(style);
-  })();
-
+  // view-only mode: typing still works everywhere; the app script gates the
+  // weather-window results themselves via document.documentElement's class.
   function applyMode(mode){
     if(mode === 'view') document.documentElement.classList.add('pwg-view-mode');
   }
@@ -313,7 +306,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  --bg:#080b10; --surface:#0d1219; --panel:#111820; --border:#1c2533; --border2:#243040;
+  --bg:#e8e8e6; --surface:#0d1219; --panel:#111820; --border:#1c2533; --border2:#243040;
   --text:#dce8f5; --muted:#4a6080; --dim:#2a3a50; --accent:#f0c040;
   --c-red:#ff4545; --c-yellow:#f0c040; --c-dull:#6fcf60; --c-green:#30d98a;
   --blue:#3b9bff; --orange:#ff8c30;
@@ -370,15 +363,19 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-
 .status-pill{margin-left:auto;background:var(--panel);border:1px solid var(--border2);border-radius:4px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--muted);}
 .status-pill b{color:var(--accent);}
 
-/* ── TABLE ── */
-.table-wrap{padding:20px 32px;overflow-x:auto;}
-table{width:100%;border-collapse:collapse;min-width:700px;}
-thead tr{background:var(--panel);border-bottom:2px solid var(--border2);}
-th{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:12px 16px;text-align:left;white-space:nowrap;user-select:none;}
-tbody tr.team-row{border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;}
-tbody tr.team-row:hover{background:rgba(240,192,64,0.04);}
-tbody tr.team-row.open{background:rgba(240,192,64,0.06);border-bottom:none;}
-td{padding:12px 16px;vertical-align:middle;white-space:nowrap;}
+/* ── TEAM TILE GRID (grouped by division, 5 per row) ── */
+.division-grid-wrap{padding:20px 32px;}
+.division-block{margin-bottom:26px;}
+.division-block:last-child{margin-bottom:0;}
+.division-heading{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border2);}
+.team-tile-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.team-tile{background:var(--panel);border:1px solid var(--border2);border-radius:6px;padding:14px 10px;cursor:pointer;text-align:center;transition:border-color .15s,background .12s;user-select:none;}
+.team-tile:hover{border-color:var(--accent);background:rgba(240,192,64,0.04);}
+.team-tile.open{border-color:var(--accent);background:rgba(240,192,64,0.06);box-shadow:0 0 14px rgba(240,192,64,0.14);}
+.team-tile-stadium{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.3;}
+.team-tile-extra{margin-top:5px;}
+.tile-expand-wrap{grid-column:1/-1;}
+.tile-meta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border2);}
 .team-badge{display:inline-flex;align-items:center;justify-content:center;width:54px;height:28px;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.6);}
 .stadium-name{font-weight:500;font-size:14px;}
 .stadium-div{font-size:11px;color:var(--muted);margin-top:1px;}
@@ -398,11 +395,6 @@ td{padding:12px 16px;vertical-align:middle;white-space:nowrap;}
 .wx2-link svg{pointer-events:none;}
 .wx2-link::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#0a1520;border:1px solid var(--border2);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;padding:5px 10px;border-radius:4px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:150;}
 .wx2-link:hover::after{opacity:1;}
-.expand-arrow{font-size:12px;color:var(--muted);transition:transform .25s;display:inline-block;}
-.open .expand-arrow{transform:rotate(180deg);color:var(--accent);}
-tr.expand-row{display:none;}
-tr.expand-row.open{display:table-row;}
-tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 
 /* ── EXPAND PANEL ── */
 .expand-panel{background:var(--surface);padding:14px 18px 18px;border-top:1px solid var(--border2);animation:slideDown .2s ease;}
@@ -600,18 +592,6 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .cheat-search:focus{border-color:var(--accent);}
 .cheat-search::placeholder{color:var(--muted);}
 
-.cheat-table-wrap{overflow-x:auto;}
-.cheat-table{width:100%;border-collapse:collapse;min-width:900px;}
-.cheat-table thead tr{background:var(--panel);border-bottom:2px solid var(--border2);}
-.cheat-table th{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:12px 14px;text-align:left;white-space:nowrap;}
-.cheat-table tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
-.cheat-table tbody tr:hover{background:rgba(255,255,255,0.02);}
-.cheat-table td{padding:11px 14px;font-size:13px;vertical-align:top;}
-.cheat-table td.notes{white-space:normal;max-width:320px;line-height:1.5;font-size:12px;color:var(--muted);}
-.wind-friendly{color:var(--c-green);font-weight:600;font-size:12px;}
-.wind-pitcher{color:var(--c-red);font-weight:600;font-size:12px;}
-.dim-val{color:var(--muted);}
-
 /* ── LEGEND ── */
 .legend-section{margin-bottom:28px;}
 .legend-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2);}
@@ -634,7 +614,7 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .wind-cheat-row{background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;margin-top:10px;}
 .wind-cheat-row-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#3b9bff;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
 .wind-windows-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
-.wind-window-card{background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:7px 7px;min-height:68px;}
+.wind-window-card{background:#080b10;border:1px solid var(--border2);border-radius:6px;padding:7px 7px;min-height:68px;}
 .wind-window-card.game-wind{border-color:#3b9bff;box-shadow:0 0 12px rgba(59,155,255,0.12);}
 .wind-window-card.no-wind{opacity:0.4;}
 .wwc-dir{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:1px;margin-bottom:2px;}
@@ -657,14 +637,11 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 
 /* ── WIND CHEAT SHEET TAB ── */
 #wind-view{display:none;padding:24px 32px;}
-.wind-table-wrap{overflow-x:auto;}
-.wind-table{width:100%;border-collapse:collapse;min-width:900px;}
-.wind-table thead tr{background:var(--panel);border-bottom:2px solid var(--border2);}
-.wind-table th{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:12px 14px;text-align:left;white-space:nowrap;}
-.wind-table tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
-.wind-table tbody tr:hover{background:rgba(255,255,255,0.02);}
-.wind-table td{padding:10px 14px;font-size:13px;vertical-align:middle;}
-.wind-table td.wind-impact-cell{white-space:normal;max-width:280px;line-height:1.45;font-size:12px;color:var(--muted);}
+.wind-detail-panel{display:flex;flex-direction:column;gap:8px;}
+.wind-detail-row{display:flex;align-items:center;gap:14px;background:#080b10;border:1px solid var(--border2);border-radius:6px;padding:9px 12px;flex-wrap:wrap;}
+.wind-detail-mid{min-width:140px;}
+.wind-impact-cell{white-space:normal;max-width:340px;line-height:1.45;font-size:12px;color:var(--muted);flex:1;}
+/* wind-team-header td: unused, kept for reference */
 .wind-team-header td{background:rgba(59,155,255,0.06);border-top:2px solid rgba(59,155,255,0.2);padding:8px 14px;}
 .wind-dir-badge{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:1px;background:var(--dim);color:var(--text);}
 .wind-blows-to{font-size:11px;color:var(--blue);margin-top:2px;}
@@ -675,7 +652,8 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
   .wind-windows-grid{grid-template-columns:1fr 1fr;}
   .site-header{padding:0 16px;}
   .controls-bar{padding:12px 16px;}
-  .table-wrap{padding:12px;}
+  .division-grid-wrap{padding:12px;}
+  .team-tile-grid{grid-template-columns:repeat(3,1fr);}
   #cheat-view{padding:16px;}
   #wind-view{padding:16px;}
 }
@@ -713,9 +691,10 @@ tr.expand-row td{padding:0;border-bottom:2px solid var(--accent);}
 .ctrl-select { font-size: 13px; padding: 7px 10px; }
 .ctrl-label { font-size: 10px; }
 
-/* Table: tighter */
-.table-wrap { padding: 8px 12px; }
-td, th { padding: 9px 10px; font-size: 12px; }
+/* Team tile grid: tighter, fewer columns */
+.division-grid-wrap { padding: 8px 12px; }
+.team-tile-grid { grid-template-columns: repeat(3,1fr); gap: 7px; }
+.team-tile { padding: 10px 6px; }
 .team-badge { width: 44px; height: 24px; font-size: 12px; }
 .stadium-name { font-size: 12px; }
 .stadium-div { font-size: 10px; }
@@ -919,17 +898,7 @@ body { padding-bottom: 72px; }
   </select>
   <div class="status-pill" id="status-pill"><b>30</b> stadiums</div>
   </div>
-  <div class="table-wrap">
-  <table id="main-table">
-  <thead>
-  <tr>
-  <th>Team</th><th>Stadium</th><th>Game Time</th>
-  <th>Curr Temp</th><th>Wind</th><th>Rain %</th><th>Coords</th><th>Weather 2nd Check</th><th></th>
-  </tr>
-  </thead>
-  <tbody id="tbody"></tbody>
-  </table>
-  </div>
+  <div class="division-grid-wrap" id="weather-grid"></div>
 </div>
 
 <!-- FIRST PITCH VIEW -->
@@ -973,17 +942,7 @@ body { padding-bottom: 72px; }
   <input class="cheat-search search-input" id="cheat-search" type="text" placeholder="Search team or stadium…" oninput="renderCheat()"/>
   </div>
   </div>
-  <div class="cheat-table-wrap">
-  <table class="cheat-table">
-  <thead>
-  <tr>
-  <th>Team</th><th>Stadium</th><th>LF</th><th>CF</th><th>RF</th>
-  <th>LF Wall</th><th>RF Wall</th><th>Hitter Winds</th><th>Pitcher Winds</th><th>2026 Notes</th>
-  </tr>
-  </thead>
-  <tbody id="cheat-tbody"></tbody>
-  </table>
-  </div>
+  <div class="division-grid-wrap" id="cheat-grid"></div>
 </div>
 
 <!-- WIND CHEAT SHEET VIEW -->
@@ -995,16 +954,7 @@ body { padding-bottom: 72px; }
   </div>
   <span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">All 8 wind directions · impact per stadium</span>
   </div>
-  <div class="wind-table-wrap">
-  <table class="wind-table">
-  <thead>
-  <tr>
-  <th>Team</th><th>Stadium</th><th>Wind From</th><th>Blows Toward</th><th>Impact</th><th>Hitter / Pitcher Level</th>
-  </tr>
-  </thead>
-  <tbody id="wind-tbody"></tbody>
-  </table>
-  </div>
+  <div class="division-grid-wrap" id="wind-grid"></div>
 </div>
 
 <!-- LEGEND VIEW -->
@@ -1098,6 +1048,7 @@ const TEAMS=[
   {abbr:'TOR',stadium:'Rogers Centre',lat:43.6417,lon:-79.3892,color:'#134A8E',division:'AL East',tz:'ET',roofType:'retractable'},
   {abbr:'WSN',stadium:'Nationals Park',lat:38.8728,lon:-77.0075,color:'#AB0003',division:'NL East',tz:'ET',roofType:null},
 ];
+const DIVISIONS=['AL East','AL Central','AL West','NL East','NL Central','NL West'];
 
 // ── CHEAT SHEET DATA (3-5 detailed 2026 park factors + weather analysis for each stadium) ─────────────────────────────────────────────────────────
 const CHEAT=[
@@ -1346,8 +1297,8 @@ async function fetchTeamData(abbr, force=false){
   const el=document.getElementById('last-updated');
   if(el) el.textContent='Last refreshed: '+fmtEST(new Date())+' EST';
   if(openTeam===abbr){
-    const cell=document.querySelector(`#er-${abbr} td`);
-    if(cell) cell.innerHTML=buildExpandPanel(abbr);
+    const wrap=document.getElementById(`er-${abbr}`);
+    if(wrap) wrap.innerHTML=buildExpandPanel(abbr);
   }
   if(typeof refreshFPCardsForTeam==='function') refreshFPCardsForTeam(abbr);
   }catch{allData[abbr]={abbr,hours:[],err:true};}
@@ -1498,10 +1449,14 @@ function buildWindowCard(abbr,offsetMins,label,isGame){
   </div>`;
 }
 
+function isViewMode(){
+  return document.documentElement.classList.contains('pwg-view-mode');
+}
+
 function buildExpandPanel(abbr){
   const gt=gameTimes[abbr]||'';
   const parsed=parseGameTime(gt);
-  const hasTime=parsed!=null;
+  const hasTime=parsed!=null && !isViewMode();
 
   const teamInfo = TEAMS.find(t=>t.abbr===abbr);
   const tz = teamInfo?.tz || 'local';
@@ -1522,7 +1477,20 @@ function buildExpandPanel(abbr){
   // Stadium cheat summary always shown below windows
   const cheatSection = buildStadiumCheatSummary(abbr);
 
+  let roofBadge='';
+  if(teamInfo?.roofType==='dome'){
+    roofBadge=`<span class="stadium-type fixed-dome">🏠 Fixed Dome</span>`;
+  } else if(teamInfo?.roofType==='retractable'){
+    roofBadge=`<span class="stadium-type retractable">🏠 Retractable Roof</span><span class="stadium-type-warn">⚠️ Check if roof is open or closed</span>`;
+  } else {
+    roofBadge=`<span class="stadium-type open-air">🏟️ Open Air</span>`;
+  }
+  const coordStr=teamInfo?`<a class="coord-link" href="https://www.google.com/maps?q=${teamInfo.lat},${teamInfo.lon}" target="_blank">📍 ${teamInfo.lat}, ${teamInfo.lon}</a>`:'';
+  const wxUrl=WEATHER_LINKS[abbr]||null;
+  const wxStr=wxUrl?`<a class="wx2-link" href="${wxUrl}" target="_blank" data-tip="Weather.com Hourly · ${teamInfo?.stadium||''}" style="width:auto;padding:0 10px;gap:6px;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;">🌐 Weather.com Hourly</a>`:'';
+
   return `<div class="expand-panel">
+  <div class="tile-meta-row">${roofBadge}${coordStr}${wxStr}</div>
   <div class="time-entry">
   <label>⏱ Game Time</label>
   <input class="time-input" id="ti-${abbr}" type="text" placeholder="7:05 PM" value="${esc(gt)}"
@@ -1552,73 +1520,69 @@ function renderTable(){
   const mD=divF==='all'||t.division===divF;
   return mQ&&mD;
   });
-  if(sortK==='game') data.sort((a,b)=>{
-  const ga=parseGameTime(gameTimes[a.abbr])??9999;
-  const gb=parseGameTime(gameTimes[b.abbr])??9999;
-  return ga-gb||a.abbr.localeCompare(b.abbr);
-  }); else data.sort((a,b)=>a.abbr.localeCompare(b.abbr));
 
   document.getElementById('status-pill').innerHTML=`<b>${data.length}</b> stadiums`;
-  if(!data.length){document.getElementById('tbody').innerHTML=`<tr class="empty-row"><td colspan="9">No stadiums match</td></tr>`;return;}
+  const grid=document.getElementById('weather-grid');
+  if(!data.length){grid.innerHTML=`<div class="no-time-prompt">No stadiums match</div>`;return;}
 
-  document.getElementById('tbody').innerHTML=data.map((t,idx)=>{
-  const d=allData[t.abbr];
-  const now=d?.hours?.[0]||null;
-  const gt=gameTimes[t.abbr];
-  const isOpen=openTeam===t.abbr;
-  const badge=`<span class="team-badge" style="background:${t.color}">${t.abbr}</span>`;
-  const tempStr=now?`<span class="summary-temp ${colTemp(now.temp)}">${now.temp}°F</span>`:'<span style="color:var(--muted)">—</span>';
-  const windStr=now?`<span style="font-weight:600" class="${colWind(now.wSpeed)}">${now.wSpeed} mph ${now.wCard}</span>`:'—';
-  const precipStr=now?`<span style="font-weight:600" class="${colPrecip(now.pPct)}">${now.pPct}%</span>`:'—';
-  const gtStr=gt?`<span class="has-game">⚾ ${esc(gt.toUpperCase())}</span>`:`<span class="no-game">no game set</span>`;
-  const coordStr=`<a class="coord-link" href="https://www.google.com/maps?q=${t.lat},${t.lon}" target="_blank" onclick="event.stopPropagation()">${t.lat}, ${t.lon}</a>`;
-  const wxUrl=WEATHER_LINKS[t.abbr]||null;
-  const wxStr=wxUrl?`<a class="wx2-link" href="${wxUrl}" target="_blank" onclick="event.stopPropagation()" data-tip="Weather.com Hourly · ${t.stadium}">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17.5 19a4.5 4.5 0 0 0 0-9h-.5A7 7 0 1 0 6 17.5"/>
-      <path d="M9 19v1M12 16v3M15 19v1"/>
-    </svg>
-  </a>`:'<span style="color:var(--dim);font-size:11px">—</span>';
-  let roofBadge='';
-  if(t.roofType==='dome'){
-    roofBadge=`<span class="stadium-type fixed-dome">🏠 Fixed Dome</span>`;
-  } else if(t.roofType==='retractable'){
-    roofBadge=`<span class="stadium-type retractable">🏠 Retractable Roof</span><span class="stadium-type-warn">⚠️ Check if roof is open or closed</span>`;
-  } else {
-    roofBadge=`<span class="stadium-type open-air">🏟️ Open Air</span>`;
-  }
-  return `
-  <tr class="team-row${isOpen?' open':''}" id="tr-${t.abbr}" style="animation-delay:${idx*.02}s" onclick="toggleTeam('${t.abbr}')">
-  <td>${badge}</td>
-  <td><div class="stadium-name">${t.stadium}</div><div class="stadium-div">${t.division}</div><div>${roofBadge}</div></td>
-  <td>${gtStr}</td><td>${tempStr}</td><td>${windStr}</td><td>${precipStr}</td>
-  <td>${coordStr}</td>
-  <td style="text-align:center">${wxStr}</td>
-  <td><span class="expand-arrow">▼</span></td>
-  </tr>
-  <tr class="expand-row${isOpen?' open':''}" id="er-${t.abbr}">
-  <td colspan="9">${isOpen?buildExpandPanel(t.abbr):''}</td>
-  </tr>`;
+  const byDiv={};
+  DIVISIONS.forEach(d=>byDiv[d]=[]);
+  data.forEach(t=>{ if(byDiv[t.division]) byDiv[t.division].push(t); });
+
+  grid.innerHTML = DIVISIONS.filter(d=>byDiv[d].length).map(div=>{
+  const teams=byDiv[div].slice().sort((a,b)=>{
+    if(sortK==='game'){
+    const ga=parseGameTime(gameTimes[a.abbr])??9999;
+    const gb=parseGameTime(gameTimes[b.abbr])??9999;
+    return ga-gb||a.abbr.localeCompare(b.abbr);
+    }
+    return a.abbr.localeCompare(b.abbr);
+  });
+  const tiles=teams.map(t=>{
+    const d=allData[t.abbr];
+    const now=d?.hours?.[0]||null;
+    const isOpen=openTeam===t.abbr;
+    const tempStr=now?`<span class="summary-temp ${colTemp(now.temp)}">${now.temp}°F</span>`:'<span style="color:var(--muted)">—</span>';
+    return `<div class="team-tile${isOpen?' open':''}" id="tr-${t.abbr}" onclick="toggleTeam('${t.abbr}')">
+    <span class="team-badge" style="background:${t.color}">${t.abbr}</span>
+    <div class="team-tile-stadium">${t.stadium}</div>
+    <div class="team-tile-extra">${tempStr}</div>
+    </div>`;
+  }).join('');
+  const openInDiv=teams.find(t=>t.abbr===openTeam);
+  const expand=openInDiv?`<div class="tile-expand-wrap" id="er-${openInDiv.abbr}">${buildExpandPanel(openInDiv.abbr)}</div>`:'';
+  return `<div class="division-block"><div class="division-heading">${div}</div><div class="team-tile-grid">${tiles}${expand}</div></div>`;
   }).join('');
 }
 
 // ── CHEAT SHEET RENDER ───────────────────────────────────────────────────────
+let openCheatTeam=null;
+function toggleCheatTeam(abbr){
+  openCheatTeam = openCheatTeam===abbr ? null : abbr;
+  renderCheat();
+}
 function renderCheat(){
   const q=document.getElementById('cheat-search').value.toLowerCase().trim();
-  const data=CHEAT.filter(r=>!q||r.team.toLowerCase().includes(q)||r.stadium.toLowerCase().includes(q));
-  const teamMap=Object.fromEntries(TEAMS.map(t=>[t.abbr,t.color]));
-  document.getElementById('cheat-tbody').innerHTML=data.map(r=>{
-  const color=teamMap[r.team]||'#333';
-  const badge=`<span class="team-badge" style="background:${color}">${r.team}</span>`;
-  return `<tr>
-  <td>${badge}</td>
-  <td><div class="stadium-name" style="font-size:13px">${r.stadium}</div></td>
-  <td class="dim-val">${r.lf}</td><td class="dim-val">${r.cf}</td><td class="dim-val">${r.rf}</td>
-  <td class="dim-val">${r.lfWall}</td><td class="dim-val">${r.rfWall}</td>
-  <td><span class="wind-friendly">${r.hitter}</span></td>
-  <td><span class="wind-pitcher">${r.pitcher}</span></td>
-  <td class="notes">${r.notes}</td>
-  </tr>`;
+  const data=TEAMS.filter(t=>!q||t.abbr.toLowerCase().includes(q)||t.stadium.toLowerCase().includes(q));
+  const grid=document.getElementById('cheat-grid');
+  if(!data.length){grid.innerHTML=`<div class="no-time-prompt">No stadiums match</div>`;return;}
+
+  const byDiv={};
+  DIVISIONS.forEach(d=>byDiv[d]=[]);
+  data.forEach(t=>{ if(byDiv[t.division]) byDiv[t.division].push(t); });
+
+  grid.innerHTML = DIVISIONS.filter(d=>byDiv[d].length).map(div=>{
+  const teams=byDiv[div].slice().sort((a,b)=>a.abbr.localeCompare(b.abbr));
+  const tiles=teams.map(t=>{
+    const isOpen=openCheatTeam===t.abbr;
+    return `<div class="team-tile${isOpen?' open':''}" onclick="toggleCheatTeam('${t.abbr}')">
+    <span class="team-badge" style="background:${t.color}">${t.abbr}</span>
+    <div class="team-tile-stadium">${t.stadium}</div>
+    </div>`;
+  }).join('');
+  const openInDiv=teams.find(t=>t.abbr===openCheatTeam);
+  const expand=openInDiv?`<div class="tile-expand-wrap">${buildCheatRow(openInDiv.abbr)}</div>`:'';
+  return `<div class="division-block"><div class="division-heading">${div}</div><div class="team-tile-grid">${tiles}${expand}</div></div>`;
   }).join('');
 }
 
@@ -1633,15 +1597,13 @@ function toggleTeam(abbr){
 function setTime(abbr){
   const val=document.getElementById(`ti-${abbr}`)?.value?.trim();
   if(val) gameTimes[abbr]=val; else delete gameTimes[abbr];
-  const cell=document.querySelector(`#er-${abbr} td`);
-  if(cell) cell.innerHTML=buildExpandPanel(abbr);
-  updateRowGT(abbr);
+  const wrap=document.getElementById(`er-${abbr}`);
+  if(wrap) wrap.innerHTML=buildExpandPanel(abbr);
 }
 function clearTime(abbr){
   delete gameTimes[abbr];
-  const cell=document.querySelector(`#er-${abbr} td`);
-  if(cell) cell.innerHTML=buildExpandPanel(abbr);
-  updateRowGT(abbr);
+  const wrap=document.getElementById(`er-${abbr}`);
+  if(wrap) wrap.innerHTML=buildExpandPanel(abbr);
 }
 function liveUpdate(abbr){
   clearTimeout(liveUpdate._t);
@@ -1651,7 +1613,7 @@ function liveUpdate(abbr){
   const win=document.getElementById(`windows-${abbr}`);
   if(!win) return;
   const parsed=parseGameTime(val);
-  if(parsed!=null) win.innerHTML=`<div class="windows-grid">
+  if(parsed!=null && !isViewMode()) win.innerHTML=`<div class="windows-grid">
   ${buildWindowCard(abbr,-60,'1H Before',false)}
   ${buildWindowCard(abbr,0,'First Pitch',true)}
   ${buildWindowCard(abbr,60,'+1 Hour',false)}
@@ -1660,12 +1622,6 @@ function liveUpdate(abbr){
   </div><div style="margin-top:10px;">${buildWindCheatRow(abbr)}</div>`;
   else win.innerHTML=`<div class="no-time-prompt">Enter a game time above to see the <span>5-window forecast</span></div>`;
   },350);
-}
-function updateRowGT(abbr){
-  const gt=gameTimes[abbr];
-  const cell=document.querySelector(`#tr-${abbr} td:nth-child(3)`);
-  if(!cell) return;
-  cell.innerHTML=gt?`<span class="has-game">⚾ ${esc(gt.toUpperCase())}</span>`:`<span class="no-game">no game set</span>`;
 }
 
 // ── WIND CHEAT HELPERS ───────────────────────────────────────────────────────
@@ -1817,29 +1773,52 @@ function buildWindCheatRow(abbr){
 }
 
 // ── WIND CHEAT SHEET TAB RENDER ──────────────────────────────────────────────
-function renderWind(){
-  const q=document.getElementById('wind-search').value.toLowerCase().trim();
-  const teamMap=Object.fromEntries(TEAMS.map(t=>[t.abbr,t.color]));
-  const teams=TEAMS.filter(t=>!q||t.abbr.toLowerCase().includes(q)||t.stadium.toLowerCase().includes(q));
-  const rows=[];
-  teams.forEach(t=>{
-  const color=teamMap[t.abbr]||'#333';
-  const badge=`<span class="team-badge" style="background:${color}">${t.abbr}</span>`;
-  const entries=WIND.filter(w=>w.team===t.abbr);
-  entries.forEach((w,i)=>{
+function buildWindTeamDetail(abbr){
+  const entries=WIND.filter(w=>w.team===abbr);
+  const rows=entries.map(w=>{
   const lvlClass=windLevelClass(w.level);
   const emoji=windLevelEmoji(w.level);
-  rows.push(`<tr>
-  <td>${i===0?badge:''}</td>
-  <td>${i===0?`<div class="stadium-name" style="font-size:13px">${t.stadium}</div>`:''}</td>
-  <td><span class="wind-dir-badge">${w.windFrom}</span></td>
-  <td><div class="wind-blows-to">${w.blowsTo}</div>${pushBadgeHTML(t.abbr, w.windFrom)}</td>
-  <td class="wind-impact-cell">${w.impact}</td>
-  <td><span class="wwc-level ${lvlClass}">${emoji} ${w.level}</span></td>
-  </tr>`);
-  });
-  });
-  document.getElementById('wind-tbody').innerHTML=rows.join('');
+  return `<div class="wind-detail-row">
+    <span class="wind-dir-badge">${w.windFrom}</span>
+    <div class="wind-detail-mid">
+    <div class="wind-blows-to">${w.blowsTo}</div>
+    ${pushBadgeHTML(abbr, w.windFrom)}
+    </div>
+    <div class="wind-impact-cell">${w.impact}</div>
+    <span class="wwc-level ${lvlClass}">${emoji} ${w.level}</span>
+  </div>`;
+  }).join('');
+  return `<div class="wind-detail-panel">${rows}</div>`;
+}
+
+let openWindTeam=null;
+function toggleWindTeam(abbr){
+  openWindTeam = openWindTeam===abbr ? null : abbr;
+  renderWind();
+}
+function renderWind(){
+  const q=document.getElementById('wind-search').value.toLowerCase().trim();
+  const data=TEAMS.filter(t=>!q||t.abbr.toLowerCase().includes(q)||t.stadium.toLowerCase().includes(q));
+  const grid=document.getElementById('wind-grid');
+  if(!data.length){grid.innerHTML=`<div class="no-time-prompt">No stadiums match</div>`;return;}
+
+  const byDiv={};
+  DIVISIONS.forEach(d=>byDiv[d]=[]);
+  data.forEach(t=>{ if(byDiv[t.division]) byDiv[t.division].push(t); });
+
+  grid.innerHTML = DIVISIONS.filter(d=>byDiv[d].length).map(div=>{
+  const teams=byDiv[div].slice().sort((a,b)=>a.abbr.localeCompare(b.abbr));
+  const tiles=teams.map(t=>{
+    const isOpen=openWindTeam===t.abbr;
+    return `<div class="team-tile${isOpen?' open':''}" onclick="toggleWindTeam('${t.abbr}')">
+    <span class="team-badge" style="background:${t.color}">${t.abbr}</span>
+    <div class="team-tile-stadium">${t.stadium}</div>
+    </div>`;
+  }).join('');
+  const openInDiv=teams.find(t=>t.abbr===openWindTeam);
+  const expand=openInDiv?`<div class="tile-expand-wrap">${buildWindTeamDetail(openInDiv.abbr)}</div>`:'';
+  return `<div class="division-block"><div class="division-heading">${div}</div><div class="team-tile-grid">${tiles}${expand}</div></div>`;
+  }).join('');
 }
 
 // ── TAB SWITCHING ────────────────────────────────────────────────────────────
@@ -1872,22 +1851,16 @@ async function loadAll(){
   fpCache={};
   gameTimes={};
 
-  // Clear the table so stale rows don't show while loading
-  const tbody=document.getElementById('tbody');
-  if(tbody) tbody.innerHTML='';
+  // Clear the grid so stale tiles don't show while loading
+  const grid=document.getElementById('weather-grid');
+  if(grid) grid.innerHTML='';
   const pill=document.getElementById('status-pill');
   if(pill) pill.innerHTML='<b>—</b> loading…';
   const lu=document.getElementById('last-updated');
   if(lu) lu.textContent='Refreshing…';
 
   // Close any open expand panel so it doesn't show stale weather
-  if(openTeam){
-    const er=document.getElementById(`er-${openTeam}`);
-    if(er){ er.classList.remove('open'); er.querySelector('td').innerHTML=''; }
-    const tr=document.getElementById(`tr-${openTeam}`);
-    if(tr) tr.classList.remove('open');
-    openTeam=null;
-  }
+  openTeam=null;
 
   // Fetch all 30 teams fresh, in parallel, cache-busted
   await Promise.all(TEAMS.map(t=>fetchTeamData(t.abbr, true)));
